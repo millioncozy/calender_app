@@ -1,24 +1,111 @@
 const express = require('express');
-  }
+const cors = require('cors');
+const jwt = require('jsonwebtoken');
+const bcrypt = require('bcryptjs');
+const { v4: uuidv4 } = require('uuid');
 
-  if (friendId === req.user.id) {
-    return res.status(400).json({ message: '자기 자신은 친구 추가할 수 없습니다.' });
-  }
+const app = express();
+app.use(cors());
+app.use(express.json());
 
-  const targetUser = users.find((user) => user.id === friendId);
-  if (!targetUser) {
-    return res.status(404).json({ message: '대상 유저를 찾을 수 없습니다.' });
-  }
+const PORT = process.env.PORT || 3000;
+const JWT_SECRET = 'secret123';
 
-  const alreadyFriend = friendships.some(
-    (item) =>
-      (item.userId === req.user.id && item.friendId === friendId) ||
-      (item.userId === friendId && item.friendId === req.user.id)
+// 임시 DB (메모리)
+let users = [];
+let friendships = [];
+let schedules = [];
+
+// 토큰 생성
+function createToken(user) {
+  return jwt.sign(
+    { id: user.id, username: user.username },
+    JWT_SECRET,
+    { expiresIn: '7d' }
   );
+}
 
-  if (alreadyFriend) {
-    return res.status(400).json({ message: '이미 친구입니다.' });
+// 로그인 검사
+function authMiddleware(req, res, next) {
+  const authHeader = req.headers.authorization;
+  if (!authHeader) {
+    return res.status(401).json({ message: '로그인 필요' });
   }
+
+  const token = authHeader.split(' ')[1];
+
+  try {
+    const decoded = jwt.verify(token, JWT_SECRET);
+    req.user = decoded;
+    next();
+  } catch (err) {
+    return res.status(401).json({ message: '토큰 오류' });
+  }
+}
+
+// 서버 테스트
+app.get('/', (req, res) => {
+  res.send('server is working!');
+});
+
+// 회원가입
+app.post('/auth/register', async (req, res) => {
+  const { username, password } = req.body;
+
+  const existingUser = users.find(u => u.username === username);
+  if (existingUser) {
+    return res.status(400).json({ message: '이미 존재하는 아이디' });
+  }
+
+  const hashedPassword = await bcrypt.hash(password, 10);
+
+  const user = {
+    id: uuidv4(),
+    username,
+    password: hashedPassword
+  };
+
+  users.push(user);
+
+  const token = createToken(user);
+
+  res.json({ token, user: { id: user.id, username: user.username } });
+});
+
+// 로그인
+app.post('/auth/login', async (req, res) => {
+  const { username, password } = req.body;
+
+  const user = users.find(u => u.username === username);
+  if (!user) {
+    return res.status(400).json({ message: '아이디 없음' });
+  }
+
+  const match = await bcrypt.compare(password, user.password);
+  if (!match) {
+    return res.status(400).json({ message: '비밀번호 틀림' });
+  }
+
+  const token = createToken(user);
+
+  res.json({ token, user: { id: user.id, username: user.username } });
+});
+
+// 유저 검색
+app.get('/users/search', authMiddleware, (req, res) => {
+  const keyword = req.query.username;
+
+  const result = users
+    .filter(u => u.username.includes(keyword))
+    .filter(u => u.id !== req.user.id)
+    .map(u => ({ id: u.id, username: u.username }));
+
+  res.json(result);
+});
+
+// 친구 추가
+app.post('/friends', authMiddleware, (req, res) => {
+  const { friendId } = req.body;
 
   friendships.push({ userId: req.user.id, friendId });
   friendships.push({ userId: friendId, friendId: req.user.id });
@@ -29,12 +116,12 @@ const express = require('express');
 // 친구 목록
 app.get('/friends', authMiddleware, (req, res) => {
   const friendIds = friendships
-    .filter((item) => item.userId === req.user.id)
-    .map((item) => item.friendId);
+    .filter(f => f.userId === req.user.id)
+    .map(f => f.friendId);
 
   const friendList = users
-    .filter((user) => friendIds.includes(user.id))
-    .map((user) => ({ id: user.id, username: user.username }));
+    .filter(u => friendIds.includes(u.id))
+    .map(u => ({ id: u.id, username: u.username }));
 
   res.json(friendList);
 });
@@ -43,35 +130,31 @@ app.get('/friends', authMiddleware, (req, res) => {
 app.post('/schedules', authMiddleware, (req, res) => {
   const { date, text } = req.body;
 
-  if (!date || !text) {
-    return res.status(400).json({ message: 'date와 text를 입력하세요.' });
-  }
-
   const schedule = {
     id: uuidv4(),
     userId: req.user.id,
     username: req.user.username,
     date,
-    text,
+    text
   };
 
   schedules.push(schedule);
   res.json(schedule);
 });
 
-// 보이는 일정 조회 (내 일정 + 친구 일정)
+// 일정 조회 (내 + 친구)
 app.get('/schedules', authMiddleware, (req, res) => {
   const friendIds = friendships
-    .filter((item) => item.userId === req.user.id)
-    .map((item) => item.friendId);
+    .filter(f => f.userId === req.user.id)
+    .map(f => f.friendId);
 
-  const visibleSchedules = schedules.filter(
-    (item) => item.userId === req.user.id || friendIds.includes(item.userId)
+  const visible = schedules.filter(
+    s => s.userId === req.user.id || friendIds.includes(s.userId)
   );
 
-  res.json(visibleSchedules);
+  res.json(visible);
 });
 
 app.listen(PORT, () => {
-  console.log(`Server running on port ${PORT}`);
+  console.log('Server running');
 });

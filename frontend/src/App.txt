@@ -1,0 +1,67 @@
+import React, { useEffect, useMemo, useState } from 'react';
+import axios from 'axios';
+import Calendar from 'react-calendar';
+import 'react-calendar/dist/Calendar.css';
+
+const API_BASE_URL = 'https://YOUR-RAILWAY-URL.up.railway.app';
+
+function App() {
+  const [mode, setMode] = useState('login');
+  const [username, setUsername] = useState('');
+  const [password, setPassword] = useState('');
+  const [user, setUser] = useState(null);
+  const [token, setToken] = useState(localStorage.getItem('token') || '');
+  const [selectedDate, setSelectedDate] = useState(new Date());
+  const [scheduleText, setScheduleText] = useState('');
+  const [schedules, setSchedules] = useState([]);
+  const [searchKeyword, setSearchKeyword] = useState('');
+  const [searchResults, setSearchResults] = useState([]);
+  const [friends, setFriends] = useState([]);
+  const [message, setMessage] = useState('');
+
+  const authHeaders = useMemo(() => ({
+    headers: { Authorization: `Bearer ${token}` },
+  }), [token]);
+
+  const formatDate = (date) => {
+    const year = date.getFullYear();
+    const month = String(date.getMonth() + 1).padStart(2, '0');
+    const day = String(date.getDate()).padStart(2, '0');
+    return `${year}-${month}-${day}`;
+  };
+
+  const selectedDateString = formatDate(selectedDate);
+
+  const schedulesByDate = schedules.reduce((acc, item) => {
+    if (!acc[item.date]) acc[item.date] = [];
+    acc[item.date].push(item);
+    return acc;
+  }, {});
+
+  const selectedSchedules = schedulesByDate[selectedDateString] || [];
+
+  async function handleAuth() {
+    try {
+      const endpoint = mode === 'login' ? '/auth/login' : '/auth/register';
+      const res = await axios.post(`${API_BASE_URL}${endpoint}`, {
+        username,
+        password,
+      });
+
+      localStorage.setItem('token', res.data.token);
+      localStorage.setItem('user', JSON.stringify(res.data.user));
+      setToken(res.data.token);
+      setUser(res.data.user);
+      setMessage(`${mode === 'login' ? '로그인' : '회원가입'} 성공`);
+    } catch (error) {
+      setMessage(error.response?.data?.message || '요청 실패');
+    }
+  }
+
+  async function loadSchedules() {
+    if (!token) return;
+    try {
+      const res = await axios.get(`${API_BASE_URL}/schedules`, authHeaders);
+      setSchedules(res.data);
+    } catch (error) {
+      setMessage('일정을 불러오지 못했습니다.');

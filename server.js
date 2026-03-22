@@ -11,12 +11,10 @@ app.use(express.json());
 const PORT = process.env.PORT || 3000;
 const JWT_SECRET = 'secret123';
 
-// 임시 DB (메모리)
 let users = [];
 let friendships = [];
 let schedules = [];
 
-// 토큰 생성
 function createToken(user) {
   return jwt.sign(
     { id: user.id, username: user.username },
@@ -25,7 +23,6 @@ function createToken(user) {
   );
 }
 
-// 로그인 검사
 function authMiddleware(req, res, next) {
   const authHeader = req.headers.authorization;
   if (!authHeader) {
@@ -43,14 +40,16 @@ function authMiddleware(req, res, next) {
   }
 }
 
-// 서버 테스트
 app.get('/', (req, res) => {
   res.send('server is working!');
 });
 
-// 회원가입
 app.post('/auth/register', async (req, res) => {
   const { username, password } = req.body;
+
+  if (!username || !password) {
+    return res.status(400).json({ message: '아이디/비밀번호 필요' });
+  }
 
   const existingUser = users.find(u => u.username === username);
   if (existingUser) {
@@ -68,13 +67,15 @@ app.post('/auth/register', async (req, res) => {
   users.push(user);
 
   const token = createToken(user);
-
   res.json({ token, user: { id: user.id, username: user.username } });
 });
 
-// 로그인
 app.post('/auth/login', async (req, res) => {
   const { username, password } = req.body;
+
+  if (!username || !password) {
+    return res.status(400).json({ message: '아이디/비밀번호 필요' });
+  }
 
   const user = users.find(u => u.username === username);
   if (!user) {
@@ -87,13 +88,11 @@ app.post('/auth/login', async (req, res) => {
   }
 
   const token = createToken(user);
-
   res.json({ token, user: { id: user.id, username: user.username } });
 });
 
-// 유저 검색
 app.get('/users/search', authMiddleware, (req, res) => {
-  const keyword = req.query.username;
+  const keyword = req.query.username || '';
 
   const result = users
     .filter(u => u.username.includes(keyword))
@@ -103,9 +102,12 @@ app.get('/users/search', authMiddleware, (req, res) => {
   res.json(result);
 });
 
-// 친구 추가
 app.post('/friends', authMiddleware, (req, res) => {
   const { friendId } = req.body;
+
+  if (!friendId) {
+    return res.status(400).json({ message: 'friendId 필요' });
+  }
 
   friendships.push({ userId: req.user.id, friendId });
   friendships.push({ userId: friendId, friendId: req.user.id });
@@ -113,7 +115,6 @@ app.post('/friends', authMiddleware, (req, res) => {
   res.json({ message: '친구 추가 완료' });
 });
 
-// 친구 목록
 app.get('/friends', authMiddleware, (req, res) => {
   const friendIds = friendships
     .filter(f => f.userId === req.user.id)
@@ -126,9 +127,12 @@ app.get('/friends', authMiddleware, (req, res) => {
   res.json(friendList);
 });
 
-// 일정 추가
 app.post('/schedules', authMiddleware, (req, res) => {
   const { date, text } = req.body;
+
+  if (!date || !text) {
+    return res.status(400).json({ message: 'date/text 필요' });
+  }
 
   const schedule = {
     id: uuidv4(),
@@ -142,7 +146,6 @@ app.post('/schedules', authMiddleware, (req, res) => {
   res.json(schedule);
 });
 
-// 일정 조회 (내 + 친구)
 app.get('/schedules', authMiddleware, (req, res) => {
   const friendIds = friendships
     .filter(f => f.userId === req.user.id)
@@ -156,5 +159,5 @@ app.get('/schedules', authMiddleware, (req, res) => {
 });
 
 app.listen(PORT, () => {
-  console.log('Server running');
+  console.log(`Server running on port ${PORT}`);
 });

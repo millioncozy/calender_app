@@ -9,8 +9,8 @@ function App() {
   const [mode, setMode] = useState('login');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [user, setUser] = useState(null);
-  const [token, setToken] = useState(localStorage.getItem('token') || '');
+  const [user, setUser] = useState({ id: 'preview', username: '홍길동' });
+  const [token, setToken] = useState('preview-token');
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [scheduleText, setScheduleText] = useState('');
   const [schedules, setSchedules] = useState([]);

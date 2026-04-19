@@ -54,6 +54,6 @@ localPort = 5000
 externalPort = 5000
 
 [deployment]
-deploymentTarget = "autoscale"
-run = ["sh", "-c", "node server.js & npx serve frontend/dist -l 5000"]
-build = ["sh", "-c", "cd frontend && npm install && npm run build"]
+deploymentTarget = "cloudrun"
+run = ["sh", "-c", "node server.js"]
+build = ["sh", "-c", "npm install"]

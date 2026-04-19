@@ -9,7 +9,7 @@ app.use(cors());
 app.use(express.json());
 
 const PORT = process.env.PORT || 3000;
-const JWT_SECRET = 'secret123';
+const JWT_SECRET = process.env.JWT_SECRET || 'secret123';
 
 let users = [];
 let friendships = [];

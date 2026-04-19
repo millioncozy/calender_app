@@ -4,14 +4,14 @@ import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
 import './App.css';
 
-const API_BASE_URL = '';
+const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 
 function App() {
   const [mode, setMode] = useState('login');
   const [username, setUsername] = useState('');
   const [password, setPassword] = useState('');
-  const [user, setUser] = useState({ id: 'preview', username: '홍길동' });
-  const [token, setToken] = useState('preview-token');
+  const [user, setUser] = useState(null);
+  const [token, setToken] = useState(localStorage.getItem('token') || '');
   const [selectedDate, setSelectedDate] = useState(new Date());
   const [scheduleText, setScheduleText] = useState('');
   const [schedules, setSchedules] = useState([]);

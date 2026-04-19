@@ -6,6 +6,34 @@ import './App.css';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 
+function calcProgress(enlistmentDate, dischargeDate) {
+  if (!enlistmentDate || !dischargeDate) return null;
+  const today = new Date();
+  today.setHours(0, 0, 0, 0);
+  const enlist = new Date(enlistmentDate);
+  const discharge = new Date(dischargeDate);
+  if (today < enlist) return 0;
+  if (today >= discharge) return 100;
+  const pct = ((today - enlist) / (discharge - enlist)) * 100;
+  return Math.round(pct * 100) / 100;
+}
+
+function ProgressBar({ enlistmentDate, dischargeDate, username }) {
+  const pct = calcProgress(enlistmentDate, dischargeDate);
+  if (pct === null) {
+    return <p className="empty-text">{username ? `${username}: 복무 정보 없음` : '복무 날짜를 등록해 주세요'}</p>;
+  }
+  return (
+    <div className="progress-wrap">
+      {username && <span className="progress-username">{username}</span>}
+      <div className="progress-bar-bg">
+        <div className="progress-bar-fill" style={{ width: `${pct}%` }} />
+      </div>
+      <span className="progress-pct">{pct.toFixed(2)}%</span>
+    </div>
+  );
+}
+
 function App() {
   const [mode, setMode] = useState('login');
   const [username, setUsername] = useState('');
@@ -27,6 +55,11 @@ function App() {
   const [friends, setFriends] = useState([]);
   const [friendRequests, setFriendRequests] = useState({ received: [], sent: [] });
   const [friendTab, setFriendTab] = useState('list');
+
+  // 군 복무
+  const [enlistmentDate, setEnlistmentDate] = useState('');
+  const [dischargeDate, setDischargeDate] = useState('');
+  const [militarySaved, setMilitarySaved] = useState(false);
 
   const [message, setMessage] = useState('');
 
@@ -83,6 +116,26 @@ function App() {
   }
 
   // ── 일정 ──
+  async function loadMyProfile() {
+    if (!token) return;
+    try {
+      const res = await axios.get(`${API_BASE_URL}/users/me`, authHeaders);
+      if (res.data.enlistment_date) setEnlistmentDate(res.data.enlistment_date.slice(0, 10));
+      if (res.data.discharge_date) setDischargeDate(res.data.discharge_date.slice(0, 10));
+    } catch {}
+  }
+
+  async function saveMilitaryDates() {
+    try {
+      await axios.put(`${API_BASE_URL}/users/me`, { enlistmentDate, dischargeDate }, authHeaders);
+      setMilitarySaved(true);
+      showMessage('복무 날짜가 저장되었습니다');
+      setTimeout(() => setMilitarySaved(false), 2000);
+    } catch (error) {
+      showMessage(error.response?.data?.message || '저장 실패');
+    }
+  }
+
   async function loadSchedules() {
     if (!token) return;
     try {
@@ -203,6 +256,7 @@ function App() {
       loadSchedules();
       loadFriends();
       loadFriendRequests();
+      loadMyProfile();
     }
   }, [token]);
 
@@ -251,6 +305,11 @@ function App() {
         {/* ── 홈 탭 ── */}
         {activeTab === 'home' && (
           <>
+            <div className="card">
+              <div className="card-title">🪖 내 복무 현황</div>
+              <ProgressBar enlistmentDate={enlistmentDate} dischargeDate={dischargeDate} />
+            </div>
+
             <div className="calendar-wrapper">
               <Calendar
                 onChange={setSelectedDate}
@@ -335,11 +394,15 @@ function App() {
                 ) : (
                   <ul className="user-list">
                     {friends.map((friend) => (
-                      <li key={friend.id} className="user-item">
+                      <li key={friend.id} className="user-item-col">
                         <span className="user-item-name">
                           <span className="avatar">{friend.username[0]}</span>
                           {friend.username}
                         </span>
+                        <ProgressBar
+                          enlistmentDate={friend.enlistment_date}
+                          dischargeDate={friend.discharge_date}
+                        />
                       </li>
                     ))}
                   </ul>
@@ -439,6 +502,23 @@ function App() {
                   <div className="stat-num">{schedules.filter(s => s.userId === user.id).length}</div>
                   <div className="stat-label">일정</div>
                 </div>
+              </div>
+            </div>
+            <div className="card">
+              <div className="card-title">🪖 군 복무 정보</div>
+              <ProgressBar enlistmentDate={enlistmentDate} dischargeDate={dischargeDate} />
+              <div className="military-inputs">
+                <div className="input-group" style={{ marginTop: 14 }}>
+                  <label>입대일</label>
+                  <input type="date" value={enlistmentDate} onChange={(e) => setEnlistmentDate(e.target.value)} />
+                </div>
+                <div className="input-group">
+                  <label>전역일</label>
+                  <input type="date" value={dischargeDate} onChange={(e) => setDischargeDate(e.target.value)} />
+                </div>
+                <button className="btn-primary" style={{ marginTop: 4 }} onClick={saveMilitaryDates}>
+                  {militarySaved ? '저장됨 ✓' : '저장'}
+                </button>
               </div>
             </div>
             <div className="card">

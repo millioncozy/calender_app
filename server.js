@@ -78,6 +78,37 @@ app.post('/auth/login', async (req, res) => {
   }
 });
 
+// ── 내 프로필 조회 ──
+app.get('/users/me', authMiddleware, async (req, res) => {
+  try {
+    const result = await pool.query(
+      'SELECT id, username, enlistment_date, discharge_date FROM users WHERE id = $1',
+      [req.user.id]
+    );
+    if (result.rows.length === 0) return res.status(404).json({ message: '유저 없음' });
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: '서버 오류' });
+  }
+});
+
+// ── 군 복무 날짜 저장 ──
+app.put('/users/me', authMiddleware, async (req, res) => {
+  const { enlistmentDate, dischargeDate } = req.body;
+  try {
+    const result = await pool.query(
+      `UPDATE users SET enlistment_date = $1, discharge_date = $2 WHERE id = $3
+       RETURNING id, username, enlistment_date, discharge_date`,
+      [enlistmentDate || null, dischargeDate || null, req.user.id]
+    );
+    res.json(result.rows[0]);
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: '서버 오류' });
+  }
+});
+
 // ── 유저 검색 ──
 app.get('/users/search', authMiddleware, async (req, res) => {
   const keyword = req.query.username || '';
@@ -93,11 +124,11 @@ app.get('/users/search', authMiddleware, async (req, res) => {
   }
 });
 
-// ── 친구 목록 ──
+// ── 친구 목록 (군 복무 정보 포함) ──
 app.get('/friends', authMiddleware, async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT u.id, u.username
+      `SELECT u.id, u.username, u.enlistment_date, u.discharge_date
        FROM friendships f
        JOIN users u ON u.id = f.friend_id
        WHERE f.user_id = $1`,

@@ -1,0 +1,91 @@
+Please update the existing project without changing the overall stack or rebuilding from scratch.
+
+### Feature to add
+
+Enable a new **military service progress** feature from the **Profile** tab.
+
+### Requirements
+
+#### 1. Profile tab
+
+In the **Profile** tab, add a section called **Military Service**.
+
+This section must allow the user to input:
+
+* `enlistmentDate`
+* `dischargeDate`
+
+If both dates are entered:
+
+* calculate the service progress percentage based on today's date
+* percentage formula:
+
+  * if today is before enlistment date → 0%
+  * if today is after discharge date → 100%
+  * otherwise → `(today - enlistmentDate) / (dischargeDate - enlistmentDate) * 100`
+* round and display the percentage to **2 decimal places**
+
+#### 2. Progress bar UI
+
+Create a visual progress bar that fills according to the calculated percentage.
+
+* show the percentage text next to or below the bar
+* the filled portion should match the calculated percentage
+* use a clean mobile-friendly style
+
+#### 3. Home tab
+
+Add the same military service progress bar to the **Home** tab for the current logged-in user.
+
+* if the user has not entered enlistment/discharge dates yet, show a simple empty state message such as:
+
+  * "No military service dates registered"
+
+#### 4. Friends tab
+
+In the **Friends** tab, show each friend's military service progress visually.
+For each friend:
+
+* display their username
+* display their percentage
+* display a progress bar filled to that percentage
+
+If a friend has not registered enlistment/discharge dates:
+
+* show a fallback message such as:
+
+  * "No military service data"
+
+### Data requirements
+
+Store these new fields for each user:
+
+* `enlistmentDate`
+* `dischargeDate`
+
+If the app is currently using in-memory storage, keep the implementation consistent with the current project style unless a small structural change is necessary.
+
+### Behavior requirements
+
+* only the logged-in user can edit their own military service dates
+* Home shows only the current user's progress
+* Friends shows each friend's progress
+* Profile allows create/update of the dates
+
+### UI requirements
+
+* keep everything mobile-first
+* keep the current 3-tab structure: Home, Friends, Profile
+* do not redesign the whole app
+* only add the necessary UI for this feature
+
+### Implementation notes
+
+* preserve existing functionality
+* make minimal safe edits
+* explain which files were changed
+* after implementation, summarize:
+
+  1. where the dates are stored
+  2. how the percentage is calculated
+  3. which screens now display the progress bar

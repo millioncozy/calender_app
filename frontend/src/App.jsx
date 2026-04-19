@@ -154,7 +154,7 @@ function App() {
   if (!token || !user) {
     return (
       <div style={{ maxWidth: 420, margin: '60px auto', padding: 24 }}>
-        <h1>친구 일정 공유</h1>
+        <h1>보라매의 꿈</h1>
         <p>{mode === 'login' ? '로그인' : '회원가입'}</p>
         <input
           placeholder="아이디"

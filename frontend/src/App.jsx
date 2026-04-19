@@ -61,6 +61,10 @@ function App() {
   const [dischargeDate, setDischargeDate] = useState('');
   const [militarySaved, setMilitarySaved] = useState(false);
 
+  // 친구 캘린더
+  const [viewingFriend, setViewingFriend] = useState(null);
+  const [friendCalDate, setFriendCalDate] = useState(new Date());
+
   const [message, setMessage] = useState('');
 
   const authHeaders = useMemo(
@@ -395,10 +399,15 @@ function App() {
                   <ul className="user-list">
                     {friends.map((friend) => (
                       <li key={friend.id} className="user-item-col">
-                        <span className="user-item-name">
-                          <span className="avatar">{friend.username[0]}</span>
-                          {friend.username}
-                        </span>
+                        <div className="user-item-row">
+                          <span className="user-item-name">
+                            <span className="avatar">{friend.username[0]}</span>
+                            {friend.username}
+                          </span>
+                          <button className="btn-view-cal" onClick={() => { setViewingFriend(friend); setFriendCalDate(new Date()); }}>
+                            📅 일정
+                          </button>
+                        </div>
                         <ProgressBar
                           enlistmentDate={friend.enlistment_date}
                           dischargeDate={friend.discharge_date}
@@ -527,6 +536,53 @@ function App() {
           </>
         )}
       </div>
+
+      {/* ── 친구 캘린더 오버레이 ── */}
+      {viewingFriend && (() => {
+        const friendSchedules = schedules.filter(s => s.user_id === viewingFriend.id || s.userId === viewingFriend.id);
+        const byDate = friendSchedules.reduce((acc, s) => {
+          if (!acc[s.date]) acc[s.date] = [];
+          acc[s.date].push(s);
+          return acc;
+        }, {});
+        const selectedKey = formatDate(friendCalDate);
+        const daySchedules = byDate[selectedKey] || [];
+
+        return (
+          <div className="friend-cal-overlay">
+            <div className="friend-cal-header">
+              <button className="btn-back" onClick={() => setViewingFriend(null)}>← 뒤로</button>
+              <span className="friend-cal-title">{viewingFriend.username}의 캘린더</span>
+            </div>
+            <div className="friend-cal-body">
+              <div className="calendar-wrapper">
+                <Calendar
+                  onChange={setFriendCalDate}
+                  value={friendCalDate}
+                  tileContent={({ date, view }) => {
+                    if (view !== 'month') return null;
+                    return byDate[formatDate(date)]?.length > 0 ? <div className="tile-dot" /> : null;
+                  }}
+                />
+              </div>
+              <div className="card">
+                <div className="card-title">📋 {selectedKey} 일정</div>
+                {daySchedules.length === 0 ? (
+                  <p className="empty-text">이 날짜에 일정이 없어요</p>
+                ) : (
+                  <ul className="schedule-list">
+                    {daySchedules.map(s => (
+                      <li key={s.id} className="schedule-item">
+                        <span className="schedule-item-text">{s.text}</span>
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </div>
+            </div>
+          </div>
+        );
+      })()}
 
       {/* ── 하단 탭바 ── */}
       <nav className="bottom-nav">

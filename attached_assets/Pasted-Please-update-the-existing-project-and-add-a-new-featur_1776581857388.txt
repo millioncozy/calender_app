@@ -1,0 +1,92 @@
+Please update the existing project and add a new feature to the **Friends** tab.
+
+### New feature: View a friend's calendar
+
+In the **Friends** tab, add the ability to view the calendar of a friend who has saved schedules.
+
+### Requirements
+
+#### 1. Friends list UI
+
+For each friend shown in the **Friends** tab:
+
+* display the friend's username
+* keep the existing military service progress display if already added
+* add a new button such as:
+
+  * `View Calendar`
+
+#### 2. Friend calendar screen/modal
+
+When the user taps `View Calendar` for a friend:
+
+* open a new friend calendar view
+* this can be:
+
+  * a separate screen/page, or
+  * a modal / bottom sheet
+* choose the simplest option that fits the current project structure
+
+#### 3. Calendar display
+
+In the friend calendar view:
+
+* show a calendar UI similar to the Home tab calendar
+* visually indicate dates that have schedules saved by that friend
+* when a date is selected, show that friend's schedules for that date
+
+#### 4. Schedule data rules
+
+Only show schedules that belong to the selected friend.
+Do not show the current user's schedules in this view.
+
+Each schedule item should display:
+
+* schedule text
+* time if time fields exist in the project
+* date information if needed
+
+#### 5. Empty state
+
+If the friend has no saved schedules:
+
+* show a simple empty state message such as:
+
+  * `No schedules saved`
+
+If a selected date has no schedules:
+
+* show a simple message such as:
+
+  * `No schedules for this date`
+
+#### 6. Read-only behavior
+
+The friend's calendar must be **read-only**.
+
+* do not allow editing
+* do not allow deleting
+* do not allow adding schedules from the friend's calendar view
+
+### Implementation guidance
+
+* preserve the existing stack and project structure
+* do not rebuild the app from scratch
+* make minimal safe edits
+* reuse the existing calendar/schedule UI logic if possible
+* keep the design mobile-first
+* keep the current 3-tab structure: Home, Friends, Profile
+
+### Data behavior
+
+Use the existing schedule data source.
+Filter schedules by the selected friend's user ID.
+
+### After implementation
+
+Please summarize:
+
+1. which files were changed
+2. how the friend calendar is opened
+3. how friend schedules are filtered
+4. what remains unfinished, if anything

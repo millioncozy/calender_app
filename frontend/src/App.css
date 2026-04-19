@@ -457,3 +457,260 @@ body {
   font-size: 22px;
   line-height: 1;
 }
+
+.nav-badge {
+  position: absolute;
+  top: 6px;
+  right: calc(50% - 18px);
+  background: #e05;
+  color: #fff;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 5px;
+  min-width: 16px;
+  text-align: center;
+}
+
+.nav-btn {
+  position: relative;
+}
+
+/* ── 일정 수정/삭제 ── */
+.schedule-text-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  margin-top: 2px;
+}
+
+.schedule-actions {
+  display: flex;
+  gap: 4px;
+  flex-shrink: 0;
+}
+
+.btn-icon {
+  background: none;
+  border: none;
+  font-size: 16px;
+  cursor: pointer;
+  padding: 4px;
+  border-radius: 6px;
+  line-height: 1;
+  transition: background 0.15s;
+}
+
+.btn-icon:active {
+  background: #f0f0f0;
+}
+
+.schedule-edit-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  margin-top: 4px;
+  flex-wrap: wrap;
+}
+
+.schedule-edit-input {
+  flex: 1;
+  padding: 8px 12px;
+  border: 1.5px solid #667eea;
+  border-radius: 10px;
+  font-size: 14px;
+  outline: none;
+  min-width: 0;
+}
+
+.btn-confirm {
+  padding: 8px 12px;
+  background: #667eea;
+  color: #fff;
+  border: none;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.btn-cancel {
+  padding: 8px 12px;
+  background: #f0f0f0;
+  color: #555;
+  border: none;
+  border-radius: 10px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+/* ── 친구 요청 서브탭 ── */
+.friend-sub-tabs {
+  display: flex;
+  background: #fff;
+  border-radius: 12px;
+  padding: 4px;
+  margin-bottom: 14px;
+  box-shadow: 0 2px 8px rgba(0,0,0,0.06);
+}
+
+.friend-sub-tab {
+  flex: 1;
+  padding: 10px 8px;
+  border: none;
+  background: transparent;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  color: #aaa;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: all 0.2s;
+}
+
+.friend-sub-tab.active {
+  background: #667eea;
+  color: #fff;
+}
+
+.badge {
+  background: #e05;
+  color: #fff;
+  border-radius: 10px;
+  font-size: 10px;
+  font-weight: 700;
+  padding: 1px 5px;
+  min-width: 16px;
+  text-align: center;
+}
+
+/* ── 친구 요청 수락/거절 버튼 ── */
+.request-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.btn-accept {
+  padding: 8px 14px;
+  background: #667eea;
+  color: #fff;
+  border: none;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: opacity 0.2s;
+}
+
+.btn-accept:active {
+  opacity: 0.8;
+}
+
+.btn-reject {
+  padding: 8px 14px;
+  background: #fee;
+  color: #e05;
+  border: none;
+  border-radius: 20px;
+  font-size: 13px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-reject:active {
+  background: #fcc;
+}
+
+/* ── 프로필 탭 ── */
+.profile-card {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  padding: 32px 20px;
+  gap: 12px;
+}
+
+.profile-avatar {
+  width: 72px;
+  height: 72px;
+  background: linear-gradient(135deg, #667eea, #764ba2);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 28px;
+  font-weight: 800;
+}
+
+.profile-name {
+  font-size: 20px;
+  font-weight: 800;
+  color: #1a1a1a;
+}
+
+.profile-stats {
+  display: flex;
+  gap: 40px;
+  margin-top: 8px;
+}
+
+.stat {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 2px;
+}
+
+.stat-num {
+  font-size: 22px;
+  font-weight: 800;
+  color: #667eea;
+}
+
+.stat-label {
+  font-size: 12px;
+  color: #888;
+  font-weight: 600;
+}
+
+.btn-logout-full {
+  width: 100%;
+  padding: 15px;
+  background: #fee;
+  color: #e05;
+  border: none;
+  border-radius: 12px;
+  font-size: 15px;
+  font-weight: 700;
+  cursor: pointer;
+  transition: background 0.2s;
+}
+
+.btn-logout-full:active {
+  background: #fcc;
+}
+
+/* 헤더 심플화 */
+.app-header {
+  background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+  padding: 18px 20px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: sticky;
+  top: 0;
+  z-index: 100;
+}
+
+.app-header-title {
+  font-size: 18px;
+  font-weight: 800;
+  color: #fff;
+}

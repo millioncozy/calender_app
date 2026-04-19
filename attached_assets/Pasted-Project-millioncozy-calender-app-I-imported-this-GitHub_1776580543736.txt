@@ -1,0 +1,82 @@
+Project: `millioncozy/calender_app`
+
+I imported this GitHub repository into Replit and want to continue development without rebuilding from scratch.
+
+Please inspect the existing project structure and make the minimum necessary changes to get it working cleanly in Replit first, then improve the app in this order:
+
+### Goal 1: Make the existing app run correctly in Replit
+
+* Detect the current project structure.
+* The backend appears to be a Node/Express server in the repo root.
+* The frontend appears to be a Vite + React app inside `frontend/`.
+* Set up the correct run workflow for Replit.
+* Do not rewrite the project into a different stack.
+* Keep the existing architecture unless a small change is clearly necessary.
+
+### Goal 2: Replace hardcoded environment values
+
+* Remove hardcoded backend URL usage from the frontend.
+* Replace it with environment-based configuration.
+* Use `import.meta.env.VITE_API_BASE_URL` in the Vite frontend.
+* If no env value is present, use a sensible local fallback.
+* Remove hardcoded JWT secret usage from the backend.
+* Replace it with `process.env.JWT_SECRET`.
+
+### Goal 3: Stabilize the existing features
+
+Preserve and verify:
+
+* register/login
+* schedule create/list
+* user search
+* friend list
+* current friend-add behavior
+
+Fix obvious bugs and mismatched paths if needed.
+
+### Goal 4: Add the missing product-level features in this order
+
+1. Friend request system instead of instant friendship
+
+   * create friend request
+   * view received requests
+   * view sent requests
+   * accept request
+   * reject request
+   * prevent self-request
+   * prevent duplicate pending requests
+   * prevent duplicate existing friendships
+
+2. Schedule editing and deletion
+
+   * only schedule owner can edit/delete
+
+3. Better mobile-first UI cleanup
+
+   * keep the app simple
+   * optimize for smartphone layout
+   * use 3 main screens/tabs: Home, Friends, Profile
+
+### Requirements
+
+* Prefer minimal, readable edits over large rewrites.
+* Explain what files you changed and why.
+* If the current Replit run command is wrong, fix it.
+* If both frontend and backend cannot run together cleanly, propose the simplest Replit-friendly setup.
+* Keep the current repository structure if possible.
+* Before implementing new features, make the existing app runnable.
+
+### Helpful implementation guidance
+
+* Backend root likely uses Express and JWT.
+* Frontend likely uses React + Vite in `frontend/`.
+* Create a `friend_requests` data structure or collection/table abstraction consistent with the current simple app style.
+* If the app is still using in-memory arrays, keep that for now unless changing storage is required for correctness.
+* Do not add paid services.
+* Do not migrate the whole project to Flutter or another framework.
+
+After setup, summarize:
+
+1. how to run the app in Replit
+2. what secrets/env vars are required
+3. what remains unfinished

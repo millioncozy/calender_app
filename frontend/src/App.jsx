@@ -300,7 +300,7 @@ function App() {
                       ) : (
                         <div className="schedule-text-row">
                           <span className="schedule-item-text">{item.text}</span>
-                          {item.userId === user.id && (
+                          {(item.user_id || item.userId) === user.id && (
                             <div className="schedule-actions">
                               <button className="btn-icon" onClick={() => { setEditingId(item.id); setEditingText(item.text); }}>✏️</button>
                               <button className="btn-icon" onClick={() => deleteSchedule(item.id)}>🗑️</button>

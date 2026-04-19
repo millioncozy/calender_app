@@ -2,6 +2,7 @@ import React, { useEffect, useMemo, useState } from 'react';
 import axios from 'axios';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
+import './App.css';
 
 const API_BASE_URL = '';
 
@@ -18,11 +19,10 @@ function App() {
   const [searchResults, setSearchResults] = useState([]);
   const [friends, setFriends] = useState([]);
   const [message, setMessage] = useState('');
+  const [activeTab, setActiveTab] = useState('calendar');
 
   const authHeaders = useMemo(
-    () => ({
-      headers: { Authorization: `Bearer ${token}` },
-    }),
+    () => ({ headers: { Authorization: `Bearer ${token}` } }),
     [token]
   );
 
@@ -43,21 +43,22 @@ function App() {
 
   const selectedSchedules = schedulesByDate[selectedDateString] || [];
 
+  function showMessage(msg) {
+    setMessage(msg);
+    setTimeout(() => setMessage(''), 3000);
+  }
+
   async function handleAuth() {
     try {
       const endpoint = mode === 'login' ? '/auth/login' : '/auth/register';
-      const res = await axios.post(`${API_BASE_URL}${endpoint}`, {
-        username,
-        password,
-      });
-
+      const res = await axios.post(`${API_BASE_URL}${endpoint}`, { username, password });
       localStorage.setItem('token', res.data.token);
       localStorage.setItem('user', JSON.stringify(res.data.user));
       setToken(res.data.token);
       setUser(res.data.user);
-      setMessage(`${mode === 'login' ? '로그인' : '회원가입'} 성공`);
+      showMessage(`${mode === 'login' ? '로그인' : '회원가입'} 성공`);
     } catch (error) {
-      setMessage(error.response?.data?.message || '요청 실패');
+      showMessage(error.response?.data?.message || '요청 실패');
     }
   }
 
@@ -66,9 +67,7 @@ function App() {
     try {
       const res = await axios.get(`${API_BASE_URL}/schedules`, authHeaders);
       setSchedules(res.data);
-    } catch (error) {
-      setMessage('일정을 불러오지 못했습니다.');
-    }
+    } catch {}
   }
 
   async function loadFriends() {
@@ -76,31 +75,21 @@ function App() {
     try {
       const res = await axios.get(`${API_BASE_URL}/friends`, authHeaders);
       setFriends(res.data);
-    } catch (error) {
-      setMessage('친구 목록을 불러오지 못했습니다.');
-    }
+    } catch {}
   }
 
   async function addSchedule() {
     if (!scheduleText.trim()) {
-      setMessage('일정 내용을 입력하세요.');
+      showMessage('일정 내용을 입력하세요.');
       return;
     }
-
     try {
-      await axios.post(
-        `${API_BASE_URL}/schedules`,
-        {
-          date: selectedDateString,
-          text: scheduleText,
-        },
-        authHeaders
-      );
+      await axios.post(`${API_BASE_URL}/schedules`, { date: selectedDateString, text: scheduleText }, authHeaders);
       setScheduleText('');
-      setMessage('일정 추가 완료');
+      showMessage('일정 추가 완료');
       loadSchedules();
     } catch (error) {
-      setMessage(error.response?.data?.message || '일정 추가 실패');
+      showMessage(error.response?.data?.message || '일정 추가 실패');
     }
   }
 
@@ -111,18 +100,20 @@ function App() {
         authHeaders
       );
       setSearchResults(res.data);
-    } catch (error) {
-      setMessage('유저 검색 실패');
+    } catch {
+      showMessage('유저 검색 실패');
     }
   }
 
   async function addFriend(friendId) {
     try {
       await axios.post(`${API_BASE_URL}/friends`, { friendId }, authHeaders);
-      setMessage('친구 추가 완료');
+      showMessage('친구 추가 완료');
       loadFriends();
+      setSearchResults([]);
+      setSearchKeyword('');
     } catch (error) {
-      setMessage(error.response?.data?.message || '친구 추가 실패');
+      showMessage(error.response?.data?.message || '친구 추가 실패');
     }
   }
 
@@ -134,14 +125,11 @@ function App() {
     setSchedules([]);
     setFriends([]);
     setSearchResults([]);
-    setMessage('로그아웃됨');
   }
 
   useEffect(() => {
     const storedUser = localStorage.getItem('user');
-    if (storedUser) {
-      setUser(JSON.parse(storedUser));
-    }
+    if (storedUser) setUser(JSON.parse(storedUser));
   }, []);
 
   useEffect(() => {
@@ -153,124 +141,174 @@ function App() {
 
   if (!token || !user) {
     return (
-      <div style={{ maxWidth: 420, margin: '60px auto', padding: 24 }}>
-        <h1>보라매의 꿈</h1>
-        <p>{mode === 'login' ? '로그인' : '회원가입'}</p>
-        <input
-          placeholder="아이디"
-          value={username}
-          onChange={(e) => setUsername(e.target.value)}
-          style={{ width: '100%', padding: 10, marginBottom: 10 }}
-        />
-        <input
-          type="password"
-          placeholder="비밀번호"
-          value={password}
-          onChange={(e) => setPassword(e.target.value)}
-          style={{ width: '100%', padding: 10, marginBottom: 10 }}
-        />
-        <button onClick={handleAuth} style={{ width: '100%', padding: 12 }}>
-          {mode === 'login' ? '로그인' : '회원가입'}
-        </button>
-        <button
-          onClick={() => setMode(mode === 'login' ? 'register' : 'login')}
-          style={{ width: '100%', padding: 12, marginTop: 10 }}
-        >
-          {mode === 'login' ? '회원가입 하러 가기' : '로그인 하러 가기'}
-        </button>
-        {message && <p style={{ marginTop: 12 }}>{message}</p>}
+      <div className="login-screen">
+        <h1 className="login-title">보라매의 꿈</h1>
+        <p className="login-subtitle">친구와 일정을 함께 공유해요</p>
+        <div className="login-card">
+          <div className="login-tab-row">
+            <button
+              className={`login-tab ${mode === 'login' ? 'active' : ''}`}
+              onClick={() => setMode('login')}
+            >로그인</button>
+            <button
+              className={`login-tab ${mode === 'register' ? 'active' : ''}`}
+              onClick={() => setMode('register')}
+            >회원가입</button>
+          </div>
+          <div className="input-group">
+            <label>아이디</label>
+            <input
+              placeholder="아이디를 입력하세요"
+              value={username}
+              onChange={(e) => setUsername(e.target.value)}
+            />
+          </div>
+          <div className="input-group">
+            <label>비밀번호</label>
+            <input
+              type="password"
+              placeholder="비밀번호를 입력하세요"
+              value={password}
+              onChange={(e) => setPassword(e.target.value)}
+              onKeyDown={(e) => e.key === 'Enter' && handleAuth()}
+            />
+          </div>
+          <button className="btn-primary" onClick={handleAuth}>
+            {mode === 'login' ? '로그인' : '회원가입'}
+          </button>
+          {message && <p className="login-message">{message}</p>}
+        </div>
       </div>
     );
   }
 
   return (
-    <div style={{ maxWidth: 1100, margin: '20px auto', padding: 20 }}>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+    <div className="app-shell">
+      <header className="app-header">
         <div>
-          <h1>{user.username}의 캘린더</h1>
-          <p>내 일정과 친구 일정을 함께 볼 수 있어요.</p>
+          <div className="app-header-title">보라매의 꿈</div>
+          <div className="app-header-sub">{user.username}님의 캘린더</div>
         </div>
-        <button onClick={logout}>로그아웃</button>
+        <button className="btn-logout" onClick={logout}>로그아웃</button>
+      </header>
+
+      <div className="tab-content">
+        {message && <div className="toast">{message}</div>}
+
+        {activeTab === 'calendar' && (
+          <>
+            <div className="calendar-wrapper">
+              <Calendar
+                onChange={setSelectedDate}
+                value={selectedDate}
+                tileContent={({ date, view }) => {
+                  if (view !== 'month') return null;
+                  const key = formatDate(date);
+                  return schedulesByDate[key]?.length > 0
+                    ? <div className="tile-dot" />
+                    : null;
+                }}
+              />
+            </div>
+
+            <div className="card">
+              <div className="card-title">📅 {selectedDateString} 일정 추가</div>
+              <div className="schedule-input-row">
+                <input
+                  placeholder="일정 내용 입력"
+                  value={scheduleText}
+                  onChange={(e) => setScheduleText(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && addSchedule()}
+                />
+                <button className="btn-add" onClick={addSchedule}>추가</button>
+              </div>
+            </div>
+
+            <div className="card">
+              <div className="card-title">📋 {selectedDateString} 일정 목록</div>
+              {selectedSchedules.length === 0 ? (
+                <p className="empty-text">등록된 일정이 없어요</p>
+              ) : (
+                <ul className="schedule-list">
+                  {selectedSchedules.map((item) => (
+                    <li key={item.id} className="schedule-item">
+                      <span className="schedule-item-user">{item.username}</span>
+                      <span className="schedule-item-text">{item.text}</span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </>
+        )}
+
+        {activeTab === 'friends' && (
+          <>
+            <div className="card">
+              <div className="card-title">🔍 친구 검색</div>
+              <div className="search-row">
+                <input
+                  placeholder="아이디로 검색"
+                  value={searchKeyword}
+                  onChange={(e) => setSearchKeyword(e.target.value)}
+                  onKeyDown={(e) => e.key === 'Enter' && searchUsers()}
+                />
+                <button className="btn-search" onClick={searchUsers}>검색</button>
+              </div>
+              {searchResults.length > 0 && (
+                <ul className="user-list">
+                  {searchResults.map((item) => (
+                    <li key={item.id} className="user-item">
+                      <span className="user-item-name">
+                        <span className="avatar">{item.username[0]}</span>
+                        {item.username}
+                      </span>
+                      <button className="btn-friend-add" onClick={() => addFriend(item.id)}>
+                        + 추가
+                      </button>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+
+            <div className="card">
+              <div className="card-title">👥 내 친구</div>
+              {friends.length === 0 ? (
+                <p className="empty-text">아직 친구가 없어요</p>
+              ) : (
+                <ul className="user-list">
+                  {friends.map((friend) => (
+                    <li key={friend.id} className="user-item">
+                      <span className="user-item-name">
+                        <span className="avatar">{friend.username[0]}</span>
+                        {friend.username}
+                      </span>
+                    </li>
+                  ))}
+                </ul>
+              )}
+            </div>
+          </>
+        )}
       </div>
 
-      {message && <p>{message}</p>}
-
-      <div style={{ display: 'grid', gridTemplateColumns: '1.3fr 1fr', gap: 24, marginTop: 20 }}>
-        <div>
-          <Calendar
-            onChange={setSelectedDate}
-            value={selectedDate}
-            tileContent={({ date, view }) => {
-              if (view !== 'month') return null;
-              const dateKey = formatDate(date);
-              const count = schedulesByDate[dateKey]?.length || 0;
-              return count > 0 ? (
-                <div style={{ fontSize: 10, marginTop: 4 }}>{count}개 일정</div>
-              ) : null;
-            }}
-          />
-
-          <div style={{ marginTop: 20, border: '1px solid #ddd', padding: 16, borderRadius: 8 }}>
-            <h3>{selectedDateString} 일정 추가</h3>
-            <input
-              placeholder="일정 내용을 입력하세요"
-              value={scheduleText}
-              onChange={(e) => setScheduleText(e.target.value)}
-              style={{ width: '100%', padding: 10, marginBottom: 10 }}
-            />
-            <button onClick={addSchedule}>일정 저장</button>
-          </div>
-        </div>
-
-        <div>
-          <div style={{ border: '1px solid #ddd', padding: 16, borderRadius: 8, marginBottom: 20 }}>
-            <h3>{selectedDateString} 일정 목록</h3>
-            {selectedSchedules.length === 0 ? (
-              <p>등록된 일정이 없습니다.</p>
-            ) : (
-              <ul>
-                {selectedSchedules.map((item) => (
-                  <li key={item.id} style={{ marginBottom: 10 }}>
-                    <strong>{item.username}</strong>: {item.text}
-                  </li>
-                ))}
-              </ul>
-            )}
-          </div>
-
-          <div style={{ border: '1px solid #ddd', padding: 16, borderRadius: 8, marginBottom: 20 }}>
-            <h3>친구 검색</h3>
-            <input
-              placeholder="아이디로 검색"
-              value={searchKeyword}
-              onChange={(e) => setSearchKeyword(e.target.value)}
-              style={{ width: '100%', padding: 10, marginBottom: 10 }}
-            />
-            <button onClick={searchUsers}>검색</button>
-            <ul style={{ marginTop: 12 }}>
-              {searchResults.map((item) => (
-                <li key={item.id} style={{ marginBottom: 10 }}>
-                  {item.username}{' '}
-                  <button onClick={() => addFriend(item.id)}>친구 추가</button>
-                </li>
-              ))}
-            </ul>
-          </div>
-
-          <div style={{ border: '1px solid #ddd', padding: 16, borderRadius: 8 }}>
-            <h3>내 친구</h3>
-            {friends.length === 0 ? (
-              <p>아직 친구가 없습니다.</p>
-            ) : (
-              <ul>
-                {friends.map((friend) => (
-                  <li key={friend.id}>{friend.username}</li>
-                ))}
-              </ul>
-            )}
-          </div>
-        </div>
-      </div>
+      <nav className="bottom-nav">
+        <button
+          className={`nav-btn ${activeTab === 'calendar' ? 'active' : ''}`}
+          onClick={() => setActiveTab('calendar')}
+        >
+          <span className="nav-icon">📅</span>
+          캘린더
+        </button>
+        <button
+          className={`nav-btn ${activeTab === 'friends' ? 'active' : ''}`}
+          onClick={() => setActiveTab('friends')}
+        >
+          <span className="nav-icon">👥</span>
+          친구
+        </button>
+      </nav>
     </div>
   );
 }

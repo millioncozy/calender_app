@@ -3,7 +3,7 @@ import axios from 'axios';
 import Calendar from 'react-calendar';
 import 'react-calendar/dist/Calendar.css';
 
-const API_BASE_URL = 'https://calenderapp-production-72ab.up.railway.app';
+const API_BASE_URL = '';
 
 function App() {
   const [mode, setMode] = useState('login');

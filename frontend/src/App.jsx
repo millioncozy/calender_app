@@ -356,19 +356,19 @@ function App() {
                   if (!items?.length) return null;
                   const myItems = items.filter(s => (s.user_id || s.userId) === user.id);
                   if (!myItems.length) return null;
+                  const first = myItems[0];
+                  const info = getTypeInfo(first.schedule_type);
                   return (
-                    <div className="tile-type-row">
-                      {myItems.slice(0, 2).map((s, i) => {
-                        const info = getTypeInfo(s.schedule_type);
-                        return info ? (
-                          <span key={i} className="tile-type-char" style={{ color: info.color, background: info.bg }}>
-                            {info.char}
-                          </span>
-                        ) : (
-                          <span key={i} className="tile-type-char tile-type-legacy">{s.text?.[0] || '·'}</span>
-                        );
-                      })}
-                      {myItems.length > 2 && <span className="tile-type-more">+{myItems.length - 2}</span>}
+                    <div className="tile-badge-wrap">
+                      <span
+                        className="tile-badge-char"
+                        style={info ? { color: info.color, background: info.bg } : { color: '#6b7280', background: '#e5e7eb' }}
+                      >
+                        {info ? info.char : (first.text?.[0] || '·')}
+                      </span>
+                      {myItems.length > 1 && (
+                        <span className="tile-badge-more">+{myItems.length - 1}</span>
+                      )}
                     </div>
                   );
                 }}

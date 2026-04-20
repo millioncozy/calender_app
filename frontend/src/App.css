@@ -216,45 +216,27 @@ body {
 .react-calendar__tile {
   position: relative !important;
   height: 54px !important;
-  padding: 0 !important;
+  padding: 4px 2px 2px !important;
   border-radius: 10px !important;
   overflow: hidden !important;
-  font-size: 0 !important; /* prevent inline-block gap */
+  vertical-align: top !important;
 }
 
-/* 날짜 숫자 — 절대 위치, 항상 최상단 */
+/* 날짜 숫자: 항상 최상단, z-index 높게 */
 .react-calendar__tile abbr,
 .react-calendar__tile time {
-  position: absolute !important;
-  top: 5px !important;
-  left: 0 !important;
-  right: 0 !important;
-  text-align: center !important;
+  position: relative !important;
+  z-index: 5 !important;
   font-size: 11px !important;
   font-weight: 700 !important;
   line-height: 1 !important;
   text-decoration: none !important;
-  z-index: 3 !important;
   display: block !important;
+  text-align: center !important;
 }
 
-/* 유형별 타일 배경색 (active/now의 !important에 안 눌리도록 별도 처리) */
-.ttype-0 { background-color: #DBEAFE !important; color: #2563EB; }
-.ttype-1 { background-color: #DCFCE7 !important; color: #16A34A; }
-.ttype-2 { background-color: #EDE9FE !important; color: #7C3AED; }
-.ttype-3 { background-color: #FEE2E2 !important; color: #DC2626; }
-.ttype-4 { background-color: #FFEDD5 !important; color: #EA580C; }
-.ttype-5 { background-color: #CFFAFE !important; color: #0891B2; }
-
-/* 선택된 타일은 항상 보라색 (순서가 위 보다 뒤라 cascade 우선) */
-.react-calendar__tile--active,
-.react-calendar__tile--active.ttype-0,
-.react-calendar__tile--active.ttype-1,
-.react-calendar__tile--active.ttype-2,
-.react-calendar__tile--active.ttype-3,
-.react-calendar__tile--active.ttype-4,
-.react-calendar__tile--active.ttype-5 {
-  background-color: #667eea !important;
+.react-calendar__tile--active {
+  background: #667eea !important;
   color: #fff !important;
 }
 
@@ -262,7 +244,6 @@ body {
   background: #f0edff !important;
 }
 
-/* 선택된 날 날짜 숫자 흰색 */
 .react-calendar__tile--active abbr,
 .react-calendar__tile--active time {
   color: #fff !important;
@@ -880,54 +861,52 @@ body {
 
 .mt-8 { margin-top: 8px; }
 
-/* ── 달력 타일 유형 글자 ── */
+/* ── 달력 타일 유형 오버레이 (인라인 스타일로 배경색 주입) ── */
 
-/* 글자 컨테이너: 타일 전체 절대 커버, 날짜 숫자 아래에 배치 */
-.tile-char-box {
+/* 타일 전체를 덮는 절대 위치 오버레이 */
+.tile-overlay {
   position: absolute;
-  left: 0;
-  right: 0;
-  bottom: 4px;
-  top: 18px; /* 날짜 숫자(11px) + 여백 확보 */
+  inset: 0;
+  z-index: 1; /* abbr(z-index:5) 보다 낮아 날짜 숫자가 항상 위에 표시 */
   display: flex;
-  align-items: center;
+  align-items: flex-end;    /* 글자를 타일 하단에 배치 */
   justify-content: center;
-  z-index: 1;
+  padding-bottom: 4px;
+  border-radius: inherit;
   pointer-events: none;
 }
 
-/* 유형 앞글자 — 크고 진하게, 색은 부모 타일에서 상속 */
-.tile-char-big {
+/* 선택된 날(보라 배경)에서는 오버레이 배경 투명하게 → 보라색 유지 */
+.react-calendar__tile--active .tile-overlay {
+  background: transparent !important;
+}
+
+/* 유형 앞글자 — 크고 진하게 */
+.tile-overlay-char {
   font-size: 22px;
   font-weight: 900;
   line-height: 1;
   display: block;
-  color: inherit; /* ttype-N의 color를 상속 */
 }
 
-/* 선택 타일에서는 흰색 */
-.react-calendar__tile--active .tile-char-big {
+/* 선택된 날에서는 흰색으로 */
+.react-calendar__tile--active .tile-overlay-char {
   color: rgba(255, 255, 255, 0.92) !important;
 }
 
-/* 오늘 타일(보라 배경)에서도 타입 글자 색 유지 */
-.react-calendar__tile--now:not(.react-calendar__tile--active) .tile-char-big {
-  color: inherit;
-}
-
 /* 2개 이상 일정 → 우상단 작은 숫자 뱃지 */
-.tile-char-count {
+.tile-overlay-count {
   position: absolute;
-  top: 4px;
+  top: 14px; /* 날짜 숫자 아래 */
   right: 3px;
   font-size: 8px;
   font-weight: 900;
-  background: rgba(0, 0, 0, 0.22);
+  background: rgba(0, 0, 0, 0.25);
   color: #fff;
   border-radius: 999px;
   padding: 1px 4px;
   line-height: 1.4;
-  z-index: 4;
+  z-index: 6;
 }
 
 /* 일정 목록 유형 배지 */

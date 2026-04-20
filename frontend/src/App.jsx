@@ -97,8 +97,11 @@ function App() {
   const selectedDateString = formatDate(selectedDate);
 
   const schedulesByDate = schedules.reduce((acc, item) => {
-    if (!acc[item.date]) acc[item.date] = [];
-    acc[item.date].push(item);
+    // DB가 "2026-04-20T00:00:00.000Z" 형태로 줄 때도 안전하게 처리
+    const dateKey = item.date ? String(item.date).slice(0, 10) : null;
+    if (!dateKey) return acc;
+    if (!acc[dateKey]) acc[dateKey] = [];
+    acc[dateKey].push(item);
     return acc;
   }, {});
 
@@ -349,37 +352,29 @@ function App() {
               <Calendar
                 onChange={setSelectedDate}
                 value={selectedDate}
-                tileClassName={({ date, view }) => {
-                  if (view !== 'month') return null;
-                  const key = formatDate(date);
-                  const items = schedulesByDate[key];
-                  if (!items?.length) return null;
-                  const myItems = items.filter(s =>
-                    String(s.user_id || s.userId) === String(user.id)
-                  );
-                  if (!myItems.length) return null;
-                  const first = myItems[0];
-                  const idx = SCHEDULE_TYPES.findIndex(t => t.key === first.schedule_type);
-                  return idx >= 0 ? `ttype-${idx}` : null;
-                }}
                 tileContent={({ date, view }) => {
                   if (view !== 'month') return null;
                   const key = formatDate(date);
-                  const items = schedulesByDate[key];
-                  if (!items?.length) return null;
-                  const myItems = items.filter(s =>
-                    String(s.user_id || s.userId) === String(user.id)
+                  const dayItems = schedulesByDate[key];
+                  if (!dayItems?.length) return null;
+                  const myItems = dayItems.filter(s =>
+                    String(s.user_id ?? s.userId) === String(user?.id)
                   );
                   if (!myItems.length) return null;
                   const first = myItems[0];
                   const info = getTypeInfo(first.schedule_type);
+                  if (!info) return null;
                   return (
-                    <div className="tile-char-box">
-                      <span className="tile-char-big">
-                        {info ? info.char : (first.text?.[0] || '·')}
+                    /* 인라인 스타일로 배경색 직접 주입 — CSS 우선순위 문제 없음 */
+                    <div
+                      className="tile-overlay"
+                      style={{ background: info.bg }}
+                    >
+                      <span className="tile-overlay-char" style={{ color: info.color }}>
+                        {info.char}
                       </span>
                       {myItems.length > 1 && (
-                        <span className="tile-char-count">+{myItems.length - 1}</span>
+                        <span className="tile-overlay-count">+{myItems.length - 1}</span>
                       )}
                     </div>
                   );

@@ -763,6 +763,150 @@ body {
   border-color: #667eea;
 }
 
+/* ── 유형 선택 그리드 ── */
+.schedule-type-grid {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 8px;
+  margin-bottom: 4px;
+}
+
+.type-btn {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 3px;
+  padding: 10px 4px;
+  border: 2px solid transparent;
+  border-radius: 12px;
+  background: var(--tb, #f3f4f6);
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.type-btn .type-btn-char {
+  font-size: 22px;
+  font-weight: 900;
+  line-height: 1;
+  color: var(--tc, #555);
+}
+
+.type-btn .type-btn-label {
+  font-size: 10px;
+  font-weight: 700;
+  color: var(--tc, #555);
+  white-space: nowrap;
+}
+
+.type-btn.active {
+  border-color: var(--tc, #667eea);
+  box-shadow: 0 0 0 3px color-mix(in srgb, var(--tc, #667eea) 25%, transparent);
+  transform: scale(1.04);
+}
+
+.type-btn.small {
+  padding: 6px 4px;
+}
+.type-btn.small .type-btn-char {
+  font-size: 16px;
+}
+.type-btn.small .type-btn-label {
+  font-size: 9px;
+}
+
+.schedule-type-grid.small {
+  gap: 5px;
+}
+
+.custom-type-row {
+  margin-top: 8px;
+}
+
+.custom-type-input {
+  width: 100%;
+  padding: 10px 14px;
+  border: 1.5px solid #e5e7eb;
+  border-radius: 10px;
+  font-size: 14px;
+  box-sizing: border-box;
+  outline: none;
+}
+
+.custom-type-input:focus {
+  border-color: #667eea;
+}
+
+.mt-8 { margin-top: 8px; }
+
+/* 달력 타일 내 유형 글자 */
+.tile-type-row {
+  display: flex;
+  justify-content: center;
+  gap: 2px;
+  flex-wrap: wrap;
+  margin-top: 1px;
+}
+
+.tile-type-char {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 11px;
+  font-weight: 900;
+  width: 18px;
+  height: 18px;
+  border-radius: 4px;
+  line-height: 1;
+}
+
+.tile-type-legacy {
+  background: #e5e7eb;
+  color: #6b7280;
+}
+
+.tile-type-more {
+  font-size: 9px;
+  font-weight: 700;
+  color: #9ca3af;
+  align-self: center;
+}
+
+/* 일정 목록 유형 배지 */
+.schedule-type-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 5px;
+  padding: 4px 10px 4px 6px;
+  border-radius: 20px;
+  font-weight: 700;
+}
+
+.badge-char {
+  font-size: 16px;
+  font-weight: 900;
+  line-height: 1;
+}
+
+.badge-label {
+  font-size: 13px;
+}
+
+/* 수정 UI */
+.schedule-edit-type {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  padding: 6px 0;
+  width: 100%;
+}
+
+.edit-action-row {
+  display: flex;
+  gap: 8px;
+  margin-top: 4px;
+}
+
 /* ── 친구 캘린더 오버레이 ── */
 .friend-cal-overlay {
   position: fixed;

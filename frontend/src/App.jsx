@@ -6,6 +6,19 @@ import './App.css';
 
 const API_BASE_URL = import.meta.env.VITE_API_BASE_URL || '';
 
+const SCHEDULE_TYPES = [
+  { key: '성과제', char: '성', color: '#2563EB', bg: '#DBEAFE' },
+  { key: '연가',   char: '연', color: '#16A34A', bg: '#DCFCE7' },
+  { key: '포상휴가', char: '포', color: '#7C3AED', bg: '#EDE9FE' },
+  { key: '위로휴가', char: '위', color: '#DC2626', bg: '#FEE2E2' },
+  { key: '기타휴가', char: '기', color: '#EA580C', bg: '#FFEDD5' },
+  { key: '외출',   char: '외', color: '#0891B2', bg: '#CFFAFE' },
+];
+
+function getTypeInfo(key) {
+  return SCHEDULE_TYPES.find(t => t.key === key) || null;
+}
+
 function calcProgress(enlistmentDate, dischargeDate) {
   if (!enlistmentDate || !dischargeDate) return null;
   const today = new Date();
@@ -44,10 +57,12 @@ function App() {
 
   // 홈 탭
   const [selectedDate, setSelectedDate] = useState(new Date());
-  const [scheduleText, setScheduleText] = useState('');
+  const [scheduleType, setScheduleType] = useState('성과제');
+  const [customType, setCustomType] = useState('');
   const [schedules, setSchedules] = useState([]);
   const [editingId, setEditingId] = useState(null);
-  const [editingText, setEditingText] = useState('');
+  const [editingType, setEditingType] = useState('성과제');
+  const [editingCustomType, setEditingCustomType] = useState('');
 
   // 친구 탭
   const [searchKeyword, setSearchKeyword] = useState('');
@@ -149,10 +164,18 @@ function App() {
   }
 
   async function addSchedule() {
-    if (!scheduleText.trim()) { showMessage('일정 내용을 입력하세요.'); return; }
+    if (scheduleType === '기타휴가' && !customType.trim()) {
+      showMessage('휴가 종류를 입력하세요.'); return;
+    }
+    const payload = {
+      date: selectedDateString,
+      scheduleType,
+      customType: scheduleType === '기타휴가' ? customType.trim() : '',
+      text: scheduleType === '기타휴가' ? (customType.trim() || '기타휴가') : scheduleType,
+    };
     try {
-      await axios.post(`${API_BASE_URL}/schedules`, { date: selectedDateString, text: scheduleText }, authHeaders);
-      setScheduleText('');
+      await axios.post(`${API_BASE_URL}/schedules`, payload, authHeaders);
+      setCustomType('');
       loadSchedules();
     } catch (error) {
       showMessage(error.response?.data?.message || '일정 추가 실패');
@@ -160,11 +183,19 @@ function App() {
   }
 
   async function updateSchedule(id) {
-    if (!editingText.trim()) return;
+    if (editingType === '기타휴가' && !editingCustomType.trim()) {
+      showMessage('휴가 종류를 입력하세요.'); return;
+    }
+    const payload = {
+      scheduleType: editingType,
+      customType: editingType === '기타휴가' ? editingCustomType.trim() : '',
+      text: editingType === '기타휴가' ? (editingCustomType.trim() || '기타휴가') : editingType,
+    };
     try {
-      await axios.put(`${API_BASE_URL}/schedules/${id}`, { text: editingText }, authHeaders);
+      await axios.put(`${API_BASE_URL}/schedules/${id}`, payload, authHeaders);
       setEditingId(null);
-      setEditingText('');
+      setEditingType('성과제');
+      setEditingCustomType('');
       loadSchedules();
     } catch (error) {
       showMessage(error.response?.data?.message || '수정 실패');
@@ -321,22 +352,56 @@ function App() {
                 tileContent={({ date, view }) => {
                   if (view !== 'month') return null;
                   const key = formatDate(date);
-                  return schedulesByDate[key]?.length > 0 ? <div className="tile-dot" /> : null;
+                  const items = schedulesByDate[key];
+                  if (!items?.length) return null;
+                  const myItems = items.filter(s => (s.user_id || s.userId) === user.id);
+                  if (!myItems.length) return null;
+                  return (
+                    <div className="tile-type-row">
+                      {myItems.slice(0, 2).map((s, i) => {
+                        const info = getTypeInfo(s.schedule_type);
+                        return info ? (
+                          <span key={i} className="tile-type-char" style={{ color: info.color, background: info.bg }}>
+                            {info.char}
+                          </span>
+                        ) : (
+                          <span key={i} className="tile-type-char tile-type-legacy">{s.text?.[0] || '·'}</span>
+                        );
+                      })}
+                      {myItems.length > 2 && <span className="tile-type-more">+{myItems.length - 2}</span>}
+                    </div>
+                  );
                 }}
               />
             </div>
 
             <div className="card">
-              <div className="card-title">📅 {selectedDateString}</div>
-              <div className="schedule-input-row">
-                <input
-                  placeholder="일정 추가"
-                  value={scheduleText}
-                  onChange={(e) => setScheduleText(e.target.value)}
-                  onKeyDown={(e) => e.key === 'Enter' && addSchedule()}
-                />
-                <button className="btn-add" onClick={addSchedule}>추가</button>
+              <div className="card-title">📅 {selectedDateString} 일정 추가</div>
+              <div className="schedule-type-grid">
+                {SCHEDULE_TYPES.map(t => (
+                  <button
+                    key={t.key}
+                    className={`type-btn ${scheduleType === t.key ? 'active' : ''}`}
+                    style={{ '--tc': t.color, '--tb': t.bg }}
+                    onClick={() => setScheduleType(t.key)}
+                  >
+                    <span className="type-btn-char">{t.char}</span>
+                    <span className="type-btn-label">{t.key}</span>
+                  </button>
+                ))}
               </div>
+              {scheduleType === '기타휴가' && (
+                <div className="custom-type-row">
+                  <input
+                    className="custom-type-input"
+                    placeholder="휴가 종류 입력 (예: 병가, 청원휴가)"
+                    value={customType}
+                    onChange={e => setCustomType(e.target.value)}
+                    onKeyDown={e => e.key === 'Enter' && addSchedule()}
+                  />
+                </div>
+              )}
+              <button className="btn-primary mt-8" onClick={addSchedule}>등록</button>
             </div>
 
             <div className="card">
@@ -345,34 +410,68 @@ function App() {
                 <p className="empty-text">등록된 일정이 없어요</p>
               ) : (
                 <ul className="schedule-list">
-                  {selectedSchedules.map((item) => (
-                    <li key={item.id} className="schedule-item">
-                      <span className="schedule-item-user">{item.username}</span>
-                      {editingId === item.id ? (
-                        <div className="schedule-edit-row">
-                          <input
-                            className="schedule-edit-input"
-                            value={editingText}
-                            onChange={(e) => setEditingText(e.target.value)}
-                            onKeyDown={(e) => e.key === 'Enter' && updateSchedule(item.id)}
-                            autoFocus
-                          />
-                          <button className="btn-confirm" onClick={() => updateSchedule(item.id)}>저장</button>
-                          <button className="btn-cancel" onClick={() => setEditingId(null)}>취소</button>
-                        </div>
-                      ) : (
-                        <div className="schedule-text-row">
-                          <span className="schedule-item-text">{item.text}</span>
-                          {(item.user_id || item.userId) === user.id && (
-                            <div className="schedule-actions">
-                              <button className="btn-icon" onClick={() => { setEditingId(item.id); setEditingText(item.text); }}>✏️</button>
-                              <button className="btn-icon" onClick={() => deleteSchedule(item.id)}>🗑️</button>
+                  {selectedSchedules.map((item) => {
+                    const info = getTypeInfo(item.schedule_type);
+                    const label = item.schedule_type === '기타휴가' && item.custom_type
+                      ? item.custom_type
+                      : (item.schedule_type || item.text);
+                    return (
+                      <li key={item.id} className="schedule-item">
+                        <span className="schedule-item-user">{item.username}</span>
+                        {editingId === item.id ? (
+                          <div className="schedule-edit-type">
+                            <div className="schedule-type-grid small">
+                              {SCHEDULE_TYPES.map(t => (
+                                <button
+                                  key={t.key}
+                                  className={`type-btn small ${editingType === t.key ? 'active' : ''}`}
+                                  style={{ '--tc': t.color, '--tb': t.bg }}
+                                  onClick={() => setEditingType(t.key)}
+                                >
+                                  <span className="type-btn-char">{t.char}</span>
+                                  <span className="type-btn-label">{t.key}</span>
+                                </button>
+                              ))}
                             </div>
-                          )}
-                        </div>
-                      )}
-                    </li>
-                  ))}
+                            {editingType === '기타휴가' && (
+                              <input
+                                className="custom-type-input mt-8"
+                                placeholder="휴가 종류"
+                                value={editingCustomType}
+                                onChange={e => setEditingCustomType(e.target.value)}
+                                autoFocus
+                              />
+                            )}
+                            <div className="edit-action-row">
+                              <button className="btn-confirm" onClick={() => updateSchedule(item.id)}>저장</button>
+                              <button className="btn-cancel" onClick={() => setEditingId(null)}>취소</button>
+                            </div>
+                          </div>
+                        ) : (
+                          <div className="schedule-text-row">
+                            {info ? (
+                              <span className="schedule-type-badge" style={{ color: info.color, background: info.bg }}>
+                                <span className="badge-char">{info.char}</span>
+                                <span className="badge-label">{label}</span>
+                              </span>
+                            ) : (
+                              <span className="schedule-item-text">{item.text}</span>
+                            )}
+                            {(item.user_id || item.userId) === user.id && (
+                              <div className="schedule-actions">
+                                <button className="btn-icon" onClick={() => {
+                                  setEditingId(item.id);
+                                  setEditingType(item.schedule_type || '성과제');
+                                  setEditingCustomType(item.custom_type || '');
+                                }}>✏️</button>
+                                <button className="btn-icon" onClick={() => deleteSchedule(item.id)}>🗑️</button>
+                              </div>
+                            )}
+                          </div>
+                        )}
+                      </li>
+                    );
+                  })}
                 </ul>
               )}
             </div>

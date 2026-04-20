@@ -279,13 +279,16 @@ app.delete('/friends/requests/:id', authMiddleware, async (req, res) => {
 
 // ── 일정 추가 ──
 app.post('/schedules', authMiddleware, async (req, res) => {
-  const { date, text } = req.body;
-  if (!date || !text) return res.status(400).json({ message: 'date/text 필요' });
+  const { date, text, scheduleType, customType } = req.body;
+  if (!date) return res.status(400).json({ message: 'date 필요' });
+  const finalText = text || scheduleType || '';
+  if (!finalText) return res.status(400).json({ message: '일정 유형 또는 내용 필요' });
 
   try {
     const result = await pool.query(
-      'INSERT INTO schedules (user_id, username, date, text) VALUES ($1, $2, $3, $4) RETURNING *',
-      [req.user.id, req.user.username, date, text]
+      `INSERT INTO schedules (user_id, username, date, text, schedule_type, custom_type)
+       VALUES ($1, $2, $3, $4, $5, $6) RETURNING *`,
+      [req.user.id, req.user.username, date, finalText, scheduleType || null, customType || null]
     );
     res.json(result.rows[0]);
   } catch (err) {
@@ -316,7 +319,7 @@ app.get('/schedules', authMiddleware, async (req, res) => {
 
 // ── 일정 수정 ──
 app.put('/schedules/:id', authMiddleware, async (req, res) => {
-  const { text, date } = req.body;
+  const { text, date, scheduleType, customType } = req.body;
   try {
     const existing = await pool.query('SELECT * FROM schedules WHERE id = $1', [req.params.id]);
     if (existing.rows.length === 0)
@@ -324,12 +327,15 @@ app.put('/schedules/:id', authMiddleware, async (req, res) => {
     if (existing.rows[0].user_id !== req.user.id)
       return res.status(403).json({ message: '본인 일정만 수정 가능' });
 
+    const finalText = text || scheduleType || existing.rows[0].text;
     const result = await pool.query(
       `UPDATE schedules
-       SET text = COALESCE($1, text), date = COALESCE($2, date)
-       WHERE id = $3
+       SET text = $1, date = COALESCE($2, date),
+           schedule_type = COALESCE($3, schedule_type),
+           custom_type = $4
+       WHERE id = $5
        RETURNING *`,
-      [text || null, date || null, req.params.id]
+      [finalText, date || null, scheduleType || null, customType || null, req.params.id]
     );
     res.json(result.rows[0]);
   } catch (err) {
@@ -354,5 +360,14 @@ app.delete('/schedules/:id', authMiddleware, async (req, res) => {
     res.status(500).json({ message: '서버 오류' });
   }
 });
+
+async function initDb() {
+  await pool.query(`
+    ALTER TABLE schedules ADD COLUMN IF NOT EXISTS schedule_type VARCHAR(50);
+    ALTER TABLE schedules ADD COLUMN IF NOT EXISTS custom_type VARCHAR(100);
+  `);
+  console.log('DB columns ready');
+}
+initDb().catch(console.error);
 
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

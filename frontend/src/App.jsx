@@ -349,25 +349,37 @@ function App() {
               <Calendar
                 onChange={setSelectedDate}
                 value={selectedDate}
+                tileClassName={({ date, view }) => {
+                  if (view !== 'month') return null;
+                  const key = formatDate(date);
+                  const items = schedulesByDate[key];
+                  if (!items?.length) return null;
+                  const myItems = items.filter(s =>
+                    String(s.user_id || s.userId) === String(user.id)
+                  );
+                  if (!myItems.length) return null;
+                  const first = myItems[0];
+                  const idx = SCHEDULE_TYPES.findIndex(t => t.key === first.schedule_type);
+                  return idx >= 0 ? `ttype-${idx}` : null;
+                }}
                 tileContent={({ date, view }) => {
                   if (view !== 'month') return null;
                   const key = formatDate(date);
                   const items = schedulesByDate[key];
                   if (!items?.length) return null;
-                  const myItems = items.filter(s => (s.user_id || s.userId) === user.id);
+                  const myItems = items.filter(s =>
+                    String(s.user_id || s.userId) === String(user.id)
+                  );
                   if (!myItems.length) return null;
                   const first = myItems[0];
                   const info = getTypeInfo(first.schedule_type);
                   return (
-                    <div className="tile-badge-wrap">
-                      <span
-                        className="tile-badge-char"
-                        style={info ? { color: info.color, background: info.bg } : { color: '#6b7280', background: '#e5e7eb' }}
-                      >
+                    <div className="tile-char-box">
+                      <span className="tile-char-big">
                         {info ? info.char : (first.text?.[0] || '·')}
                       </span>
                       {myItems.length > 1 && (
-                        <span className="tile-badge-more">+{myItems.length - 1}</span>
+                        <span className="tile-char-count">+{myItems.length - 1}</span>
                       )}
                     </div>
                   );

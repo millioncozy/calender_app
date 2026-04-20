@@ -214,39 +214,58 @@ body {
 }
 
 .react-calendar__tile {
-  /* flex column: 날짜 숫자 위 / 유형 글자 아래 */
-  display: flex !important;
-  flex-direction: column !important;
-  align-items: center !important;
-  justify-content: flex-start !important;
-  min-height: 56px !important;
-  padding: 5px 2px 4px !important;
-  border-radius: 10px !important;
-  font-size: 12px !important;
-  gap: 0 !important;
-  overflow: visible !important;
   position: relative !important;
+  height: 54px !important;
+  padding: 0 !important;
+  border-radius: 10px !important;
+  overflow: hidden !important;
+  font-size: 0 !important; /* prevent inline-block gap */
 }
 
-/* 날짜 숫자 — 항상 최상단 고정 */
-.react-calendar__tile abbr {
-  display: block !important;
+/* 날짜 숫자 — 절대 위치, 항상 최상단 */
+.react-calendar__tile abbr,
+.react-calendar__tile time {
+  position: absolute !important;
+  top: 5px !important;
+  left: 0 !important;
+  right: 0 !important;
+  text-align: center !important;
   font-size: 11px !important;
-  font-weight: 600 !important;
-  line-height: 1.1 !important;
-  margin: 0 !important;
+  font-weight: 700 !important;
+  line-height: 1 !important;
   text-decoration: none !important;
-  flex-shrink: 0 !important;
-  z-index: 1 !important;
+  z-index: 3 !important;
+  display: block !important;
 }
 
-.react-calendar__tile--active {
-  background: #667eea !important;
+/* 유형별 타일 배경색 (active/now의 !important에 안 눌리도록 별도 처리) */
+.ttype-0 { background-color: #DBEAFE !important; color: #2563EB; }
+.ttype-1 { background-color: #DCFCE7 !important; color: #16A34A; }
+.ttype-2 { background-color: #EDE9FE !important; color: #7C3AED; }
+.ttype-3 { background-color: #FEE2E2 !important; color: #DC2626; }
+.ttype-4 { background-color: #FFEDD5 !important; color: #EA580C; }
+.ttype-5 { background-color: #CFFAFE !important; color: #0891B2; }
+
+/* 선택된 타일은 항상 보라색 (순서가 위 보다 뒤라 cascade 우선) */
+.react-calendar__tile--active,
+.react-calendar__tile--active.ttype-0,
+.react-calendar__tile--active.ttype-1,
+.react-calendar__tile--active.ttype-2,
+.react-calendar__tile--active.ttype-3,
+.react-calendar__tile--active.ttype-4,
+.react-calendar__tile--active.ttype-5 {
+  background-color: #667eea !important;
   color: #fff !important;
 }
 
-.react-calendar__tile--now {
+.react-calendar__tile--now:not(.react-calendar__tile--active) {
   background: #f0edff !important;
+}
+
+/* 선택된 날 날짜 숫자 흰색 */
+.react-calendar__tile--active abbr,
+.react-calendar__tile--active time {
+  color: #fff !important;
 }
 
 .react-calendar__navigation button {
@@ -861,54 +880,54 @@ body {
 
 .mt-8 { margin-top: 8px; }
 
-/* ── 달력 타일 유형 배지 ── */
+/* ── 달력 타일 유형 글자 ── */
 
-/* 유형 글자 컨테이너: 날짜 숫자 아래 나머지 공간 전부 사용 */
-.tile-badge-wrap {
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  align-items: center;
-  justify-content: center;
-  width: 100%;
-  position: relative;
-}
-
-/* 유형 앞글자 — 크고 선명하게 */
-.tile-badge-char {
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 20px;
-  font-weight: 900;
-  width: 30px;
-  height: 30px;
-  border-radius: 8px;
-  line-height: 1;
-  letter-spacing: -0.5px;
-}
-
-/* 선택된 타일(active)에서도 색상 배지 명확히 보이도록 테두리 추가 */
-.react-calendar__tile--active .tile-badge-char {
-  box-shadow: 0 0 0 2px rgba(255,255,255,0.5);
-}
-
-/* 2개 이상일 때 작은 숫자 뱃지 */
-.tile-badge-more {
+/* 글자 컨테이너: 타일 전체 절대 커버, 날짜 숫자 아래에 배치 */
+.tile-char-box {
   position: absolute;
-  top: 0;
+  left: 0;
   right: 0;
-  font-size: 8px;
-  font-weight: 800;
-  color: #fff;
-  background: #6b7280;
-  border-radius: 999px;
-  width: 14px;
-  height: 14px;
+  bottom: 4px;
+  top: 18px; /* 날짜 숫자(11px) + 여백 확보 */
   display: flex;
   align-items: center;
   justify-content: center;
+  z-index: 1;
+  pointer-events: none;
+}
+
+/* 유형 앞글자 — 크고 진하게, 색은 부모 타일에서 상속 */
+.tile-char-big {
+  font-size: 22px;
+  font-weight: 900;
   line-height: 1;
+  display: block;
+  color: inherit; /* ttype-N의 color를 상속 */
+}
+
+/* 선택 타일에서는 흰색 */
+.react-calendar__tile--active .tile-char-big {
+  color: rgba(255, 255, 255, 0.92) !important;
+}
+
+/* 오늘 타일(보라 배경)에서도 타입 글자 색 유지 */
+.react-calendar__tile--now:not(.react-calendar__tile--active) .tile-char-big {
+  color: inherit;
+}
+
+/* 2개 이상 일정 → 우상단 작은 숫자 뱃지 */
+.tile-char-count {
+  position: absolute;
+  top: 4px;
+  right: 3px;
+  font-size: 8px;
+  font-weight: 900;
+  background: rgba(0, 0, 0, 0.22);
+  color: #fff;
+  border-radius: 999px;
+  padding: 1px 4px;
+  line-height: 1.4;
+  z-index: 4;
 }
 
 /* 일정 목록 유형 배지 */

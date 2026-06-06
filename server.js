@@ -3,6 +3,7 @@ const cors = require('cors');
 const jwt = require('jsonwebtoken');
 const bcrypt = require('bcryptjs');
 const { Pool } = require('pg');
+const path = require('path');
 
 const app = express();
 app.use(cors());
@@ -30,7 +31,9 @@ function authMiddleware(req, res, next) {
 }
 
 // ── 헬스체크 ──
-app.get('/', (req, res) => res.send('server is working!'));
+// 프론트엔드 정적 파일 서빙 (production)
+const distPath = path.join(__dirname, 'frontend', 'dist');
+app.use(express.static(distPath));
 
 // ── 회원가입 ──
 app.post('/auth/register', async (req, res) => {
@@ -427,5 +430,10 @@ async function initDb() {
   console.log('DB columns ready');
 }
 initDb().catch(console.error);
+
+// SPA 라우팅 — API 외 모든 경로는 index.html 반환
+app.get('*', (req, res) => {
+  res.sendFile(path.join(distPath, 'index.html'));
+});
 
 app.listen(PORT, () => console.log(`Server running on port ${PORT}`));

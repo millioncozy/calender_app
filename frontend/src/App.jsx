@@ -80,6 +80,10 @@ function App() {
   const [editingNicknameId, setEditingNicknameId] = useState(null);
   const [nicknameInput, setNicknameInput] = useState('');
 
+  // 내 이름 편집
+  const [editingMyName, setEditingMyName] = useState(false);
+  const [myNameInput, setMyNameInput] = useState('');
+
   // 군 복무
   const [enlistmentDate, setEnlistmentDate] = useState('');
   const [dischargeDate, setDischargeDate] = useState('');
@@ -135,6 +139,21 @@ function App() {
       setUser(res.data.user);
     } catch (error) {
       showMessage(error.response?.data?.message || '요청 실패');
+    }
+  }
+
+  async function saveProfileName() {
+    const val = myNameInput.trim();
+    if (!val) { showMessage('이름을 입력해주세요'); return; }
+    try {
+      const res = await axios.put(`${API_BASE_URL}/users/me`, { enlistmentDate, dischargeDate, name: val }, authHeaders);
+      const updated = { ...user, name: res.data.name };
+      setUser(updated);
+      localStorage.setItem('user', JSON.stringify(updated));
+      setEditingMyName(false);
+      showMessage('이름이 변경되었습니다');
+    } catch {
+      showMessage('이름 변경 실패');
     }
   }
 
@@ -564,9 +583,6 @@ function App() {
                               <span className="avatar">{dName[0]}</span>
                               <span>
                                 <span className="friend-display-name">{dName}</span>
-                                {friend.nickname && (
-                                  <span className="friend-real-name">({friend.name || friend.username})</span>
-                                )}
                                 <span className="friend-uid">@{friend.username}</span>
                               </span>
                             </span>
@@ -702,7 +718,30 @@ function App() {
           <>
             <div className="card profile-card">
               <div className="profile-avatar">{(user.name || user.username)[0]}</div>
-              <div className="profile-name">{user.name || user.username}</div>
+              {editingMyName ? (
+                <div className="profile-name-edit">
+                  <input
+                    className="profile-name-input"
+                    value={myNameInput}
+                    onChange={(e) => setMyNameInput(e.target.value)}
+                    onKeyDown={(e) => e.key === 'Enter' && saveProfileName()}
+                    autoFocus
+                  />
+                  <div className="profile-name-edit-actions">
+                    <button className="btn-nickname-save" onClick={saveProfileName}>저장</button>
+                    <button className="btn-nickname-cancel" onClick={() => setEditingMyName(false)}>취소</button>
+                  </div>
+                </div>
+              ) : (
+                <div className="profile-name-row">
+                  <div className="profile-name">{user.name || user.username}</div>
+                  <button
+                    className="btn-nickname-edit"
+                    title="이름 변경"
+                    onClick={() => { setMyNameInput(user.name || user.username); setEditingMyName(true); }}
+                  >✏️</button>
+                </div>
+              )}
               <div className="profile-username">@{user.username}</div>
               <div className="profile-stats">
                 <div className="stat">

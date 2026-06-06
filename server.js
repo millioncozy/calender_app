@@ -96,16 +96,21 @@ app.get('/users/me', authMiddleware, async (req, res) => {
   }
 });
 
-// ── 군 복무 날짜 저장 ──
+// ── 프로필 수정 (이름 + 군 복무 날짜) ──
 app.put('/users/me', authMiddleware, async (req, res) => {
-  const { enlistmentDate, dischargeDate } = req.body;
+  const { enlistmentDate, dischargeDate, name } = req.body;
   try {
     const result = await pool.query(
-      `UPDATE users SET enlistment_date = $1, discharge_date = $2 WHERE id = $3
-       RETURNING id, username, enlistment_date, discharge_date`,
-      [enlistmentDate || null, dischargeDate || null, req.user.id]
+      `UPDATE users
+       SET enlistment_date = $1,
+           discharge_date  = $2,
+           name            = COALESCE($3, name)
+       WHERE id = $4
+       RETURNING id, username, name, enlistment_date, discharge_date`,
+      [enlistmentDate || null, dischargeDate || null, name?.trim() || null, req.user.id]
     );
-    res.json(result.rows[0]);
+    const row = result.rows[0];
+    res.json({ ...row, name: row.name || row.username });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: '서버 오류' });

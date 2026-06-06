@@ -50,6 +50,71 @@ body {
   box-shadow: 0 20px 60px rgba(0,0,0,0.2);
 }
 
+/* 제작자 소개 카드 */
+.dev-card {
+  margin-top: 20px;
+  padding: 14px 18px;
+  background: rgba(255, 255, 255, 0.13);
+  border: 1px solid rgba(255, 255, 255, 0.25);
+  border-radius: 14px;
+  text-align: center;
+  backdrop-filter: blur(6px);
+}
+
+.dev-title {
+  font-size: 11px;
+  font-weight: 700;
+  color: rgba(255, 255, 255, 0.95);
+  letter-spacing: 0.04em;
+  margin-bottom: 6px;
+  text-transform: uppercase;
+}
+
+.dev-line {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.72);
+  margin-bottom: 2px;
+  line-height: 1.5;
+}
+
+.dev-links {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  margin-top: 6px;
+  margin-bottom: 2px;
+  flex-wrap: wrap;
+}
+
+.dev-link {
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.80);
+  text-decoration: none;
+}
+
+a.dev-link:hover {
+  color: #fff;
+  text-decoration: underline;
+}
+
+.dev-sep {
+  font-size: 10px;
+  color: rgba(255, 255, 255, 0.4);
+}
+
+.dev-contact {
+  display: inline-block;
+  margin-top: 6px;
+  font-size: 11px;
+  color: rgba(255, 255, 255, 0.70);
+  text-decoration: none;
+}
+
+.dev-contact:hover {
+  color: #fff;
+}
+
 .login-tab-row {
   display: flex;
   background: #f0f0f0;

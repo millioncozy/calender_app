@@ -326,6 +326,23 @@ function App() {
           </button>
           {message && <p className="login-message">{message}</p>}
         </div>
+
+        {/* 제작자 소개 */}
+        <div className="dev-card">
+          <p className="dev-title">Who is millioncozy?</p>
+          <p className="dev-line">B.S. candidate · Univ. of Seoul</p>
+          <p className="dev-line">Electrical &amp; Computer Engineering</p>
+          <div className="dev-links">
+            <a className="dev-link" href="https://github.com/millioncozy" target="_blank" rel="noreferrer">
+              github.com/millioncozy
+            </a>
+            <span className="dev-sep">·</span>
+            <span className="dev-link">2 projects</span>
+          </div>
+          <a className="dev-contact" href="mailto:limmy09@naver.com">
+            ✉ limmy09@naver.com
+          </a>
+        </div>
       </div>
     );
   }

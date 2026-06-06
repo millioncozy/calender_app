@@ -645,10 +645,16 @@ function App() {
 
       {/* ── 친구 캘린더 오버레이 ── */}
       {viewingFriend && (() => {
-        const friendSchedules = schedules.filter(s => s.user_id === viewingFriend.id || s.userId === viewingFriend.id);
+        // String 변환으로 타입 불일치(숫자 vs 문자) 방지
+        const friendSchedules = schedules.filter(s =>
+          String(s.user_id ?? s.userId) === String(viewingFriend.id)
+        );
+        // 날짜 키 정규화 — DB가 "2026-06-06T00:00:00.000Z"로 줄 때도 안전하게
         const byDate = friendSchedules.reduce((acc, s) => {
-          if (!acc[s.date]) acc[s.date] = [];
-          acc[s.date].push(s);
+          const key = s.date ? String(s.date).slice(0, 10) : null;
+          if (!key) return acc;
+          if (!acc[key]) acc[key] = [];
+          acc[key].push(s);
           return acc;
         }, {});
         const selectedKey = formatDate(friendCalDate);
@@ -667,7 +673,26 @@ function App() {
                   value={friendCalDate}
                   tileContent={({ date, view }) => {
                     if (view !== 'month') return null;
-                    return byDate[formatDate(date)]?.length > 0 ? <div className="tile-dot" /> : null;
+                    const key = formatDate(date);
+                    const items = byDate[key];
+                    if (!items?.length) return null;
+                    const first = items[0];
+                    const info = getTypeInfo(first.schedule_type);
+                    if (!info) return null;
+                    // 메인 캘린더와 동일한 오버레이 방식 적용
+                    return (
+                      <div
+                        className="tile-overlay"
+                        style={{ background: info.bg }}
+                      >
+                        <span className="tile-overlay-char" style={{ color: info.color }}>
+                          {info.char}
+                        </span>
+                        {items.length > 1 && (
+                          <span className="tile-overlay-count">+{items.length - 1}</span>
+                        )}
+                      </div>
+                    );
                   }}
                 />
               </div>
@@ -677,11 +702,24 @@ function App() {
                   <p className="empty-text">이 날짜에 일정이 없어요</p>
                 ) : (
                   <ul className="schedule-list">
-                    {daySchedules.map(s => (
-                      <li key={s.id} className="schedule-item">
-                        <span className="schedule-item-text">{s.text}</span>
-                      </li>
-                    ))}
+                    {daySchedules.map(s => {
+                      const info = getTypeInfo(s.schedule_type);
+                      return (
+                        <li key={s.id} className="schedule-item">
+                          {info && (
+                            <span
+                              className="schedule-type-badge"
+                              style={{ background: info.bg, color: info.color }}
+                            >
+                              {s.schedule_type === '기타휴가' && s.custom_type
+                                ? s.custom_type
+                                : s.schedule_type}
+                            </span>
+                          )}
+                          <span className="schedule-item-text">{s.text}</span>
+                        </li>
+                      );
+                    })}
                   </ul>
                 )}
               </div>

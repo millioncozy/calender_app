@@ -215,24 +215,28 @@ body {
 
 .react-calendar__tile {
   position: relative !important;
-  height: 54px !important;
-  padding: 4px 2px 2px !important;
+  height: 58px !important;
+  padding: 0 !important;
   border-radius: 10px !important;
   overflow: hidden !important;
   vertical-align: top !important;
 }
 
-/* 날짜 숫자: 항상 최상단, z-index 높게 */
+/* 날짜 숫자: 절대 위치로 맨 위에 고정 — 겹침 완전 방지 */
 .react-calendar__tile abbr,
 .react-calendar__tile time {
-  position: relative !important;
+  position: absolute !important;
+  top: 4px !important;
+  left: 0 !important;
+  right: 0 !important;
+  text-align: center !important;
   z-index: 5 !important;
-  font-size: 11px !important;
+  font-size: 10px !important;
   font-weight: 700 !important;
   line-height: 1 !important;
   text-decoration: none !important;
   display: block !important;
-  text-align: center !important;
+  pointer-events: none !important;
 }
 
 .react-calendar__tile--active {
@@ -861,43 +865,55 @@ body {
 
 .mt-8 { margin-top: 8px; }
 
-/* ── 달력 타일 유형 오버레이 (인라인 스타일로 배경색 주입) ── */
+/* ── 달력 타일 유형 오버레이 ──
+   구조:
+   ┌──────────────┐  ← 0px
+   │     20       │  ← abbr (absolute, top:4px, z-index:5)
+   ├ ─ ─ ─ ─ ─ ─ ┤  ← 15px  padding-top 경계
+   │              │
+   │      성      │  ← 오버레이 flex center
+   │              │
+   └──────────────┘  ← 58px
+*/
 
-/* 타일 전체를 덮는 절대 위치 오버레이 */
+/* inset:0 으로 전체 배경 커버,
+   padding-top으로 날짜 영역을 피해 글자를 아래 정렬 */
 .tile-overlay {
   position: absolute;
   inset: 0;
-  z-index: 1; /* abbr(z-index:5) 보다 낮아 날짜 숫자가 항상 위에 표시 */
+  z-index: 2;
   display: flex;
-  align-items: flex-end;    /* 글자를 타일 하단에 배치 */
+  align-items: center;
   justify-content: center;
-  padding-bottom: 4px;
-  border-radius: inherit;
+  padding-top: 15px;       /* 날짜 숫자(~14px) 아래에 글자 배치 */
   pointer-events: none;
+  border-radius: 10px;
 }
 
-/* 선택된 날(보라 배경)에서는 오버레이 배경 투명하게 → 보라색 유지 */
+/* 선택된 날(보라 배경)에서는 오버레이 배경 투명 */
 .react-calendar__tile--active .tile-overlay {
   background: transparent !important;
 }
 
 /* 유형 앞글자 — 크고 진하게 */
 .tile-overlay-char {
-  font-size: 22px;
+  font-size: 24px;
   font-weight: 900;
   line-height: 1;
   display: block;
+  position: relative;
+  z-index: 3;
 }
 
-/* 선택된 날에서는 흰색으로 */
+/* 선택된 날에서는 흰색 */
 .react-calendar__tile--active .tile-overlay-char {
   color: rgba(255, 255, 255, 0.92) !important;
 }
 
-/* 2개 이상 일정 → 우상단 작은 숫자 뱃지 */
+/* 2개 이상 일정 → 우측 상단 작은 뱃지 */
 .tile-overlay-count {
   position: absolute;
-  top: 14px; /* 날짜 숫자 아래 */
+  top: 3px;
   right: 3px;
   font-size: 8px;
   font-weight: 900;

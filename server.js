@@ -34,9 +34,11 @@ app.get('/', (req, res) => res.send('server is working!'));
 
 // ── 회원가입 ──
 app.post('/auth/register', async (req, res) => {
-  const { username, password } = req.body;
+  const { username, password, name } = req.body;
   if (!username || !password)
     return res.status(400).json({ message: '아이디/비밀번호 필요' });
+  if (!name || !name.trim())
+    return res.status(400).json({ message: '이름 필요' });
 
   try {
     const existing = await pool.query('SELECT id FROM users WHERE username = $1', [username]);
@@ -45,11 +47,11 @@ app.post('/auth/register', async (req, res) => {
 
     const hashedPassword = await bcrypt.hash(password, 10);
     const result = await pool.query(
-      'INSERT INTO users (username, password) VALUES ($1, $2) RETURNING id, username',
-      [username, hashedPassword]
+      'INSERT INTO users (username, password, name) VALUES ($1, $2, $3) RETURNING id, username, name',
+      [username, hashedPassword, name.trim()]
     );
     const user = result.rows[0];
-    res.json({ token: createToken(user), user: { id: user.id, username: user.username } });
+    res.json({ token: createToken(user), user: { id: user.id, username: user.username, name: user.name } });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: '서버 오류' });
@@ -71,7 +73,7 @@ app.post('/auth/login', async (req, res) => {
     const match = await bcrypt.compare(password, user.password);
     if (!match) return res.status(400).json({ message: '비밀번호 틀림' });
 
-    res.json({ token: createToken(user), user: { id: user.id, username: user.username } });
+    res.json({ token: createToken(user), user: { id: user.id, username: user.username, name: user.name || user.username } });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: '서버 오류' });
@@ -82,11 +84,12 @@ app.post('/auth/login', async (req, res) => {
 app.get('/users/me', authMiddleware, async (req, res) => {
   try {
     const result = await pool.query(
-      'SELECT id, username, enlistment_date, discharge_date FROM users WHERE id = $1',
+      'SELECT id, username, name, enlistment_date, discharge_date FROM users WHERE id = $1',
       [req.user.id]
     );
     if (result.rows.length === 0) return res.status(404).json({ message: '유저 없음' });
-    res.json(result.rows[0]);
+    const row = result.rows[0];
+    res.json({ ...row, name: row.name || row.username });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: '서버 오류' });
@@ -109,12 +112,14 @@ app.put('/users/me', authMiddleware, async (req, res) => {
   }
 });
 
-// ── 유저 검색 ──
+// ── 유저 검색 (아이디 기준) ──
 app.get('/users/search', authMiddleware, async (req, res) => {
   const keyword = req.query.username || '';
   try {
     const result = await pool.query(
-      'SELECT id, username FROM users WHERE username ILIKE $1 AND id != $2',
+      `SELECT id, username, COALESCE(name, username) AS name
+       FROM users
+       WHERE username ILIKE $1 AND id != $2`,
       [`%${keyword}%`, req.user.id]
     );
     res.json(result.rows);
@@ -124,13 +129,16 @@ app.get('/users/search', authMiddleware, async (req, res) => {
   }
 });
 
-// ── 친구 목록 (군 복무 정보 포함) ──
+// ── 친구 목록 (군 복무 정보 + 이름 + 내가 설정한 별명 포함) ──
 app.get('/friends', authMiddleware, async (req, res) => {
   try {
     const result = await pool.query(
-      `SELECT u.id, u.username, u.enlistment_date, u.discharge_date
+      `SELECT u.id, u.username, COALESCE(u.name, u.username) AS name,
+              u.enlistment_date, u.discharge_date,
+              fn.nickname
        FROM friendships f
        JOIN users u ON u.id = f.friend_id
+       LEFT JOIN friend_nicknames fn ON fn.user_id = $1 AND fn.friend_id = u.id
        WHERE f.user_id = $1`,
       [req.user.id]
     );
@@ -178,8 +186,8 @@ app.post('/friends/request', authMiddleware, async (req, res) => {
       [fromId, toId]
     );
 
-    const toUser = await pool.query('SELECT username FROM users WHERE id = $1', [toId]);
-    res.json({ ...result.rows[0], fromUsername: req.user.username, toUsername: toUser.rows[0]?.username });
+    const toUser = await pool.query('SELECT username, COALESCE(name, username) AS name FROM users WHERE id = $1', [toId]);
+    res.json({ ...result.rows[0], fromUsername: req.user.username, toUsername: toUser.rows[0]?.username, toName: toUser.rows[0]?.name });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: '서버 오류' });
@@ -192,7 +200,8 @@ app.get('/friends/requests', authMiddleware, async (req, res) => {
   try {
     const received = await pool.query(
       `SELECT fr.id, fr.from_id, fr.to_id, fr.status, fr.created_at,
-              u.username AS "fromUsername"
+              u.username AS "fromUsername",
+              COALESCE(u.name, u.username) AS "fromName"
        FROM friend_requests fr
        JOIN users u ON u.id = fr.from_id
        WHERE fr.to_id = $1 AND fr.status = 'pending'`,
@@ -201,7 +210,8 @@ app.get('/friends/requests', authMiddleware, async (req, res) => {
 
     const sent = await pool.query(
       `SELECT fr.id, fr.from_id, fr.to_id, fr.status, fr.created_at,
-              u.username AS "toUsername"
+              u.username AS "toUsername",
+              COALESCE(u.name, u.username) AS "toName"
        FROM friend_requests fr
        JOIN users u ON u.id = fr.to_id
        WHERE fr.from_id = $1 AND fr.status = 'pending'`,
@@ -209,6 +219,41 @@ app.get('/friends/requests', authMiddleware, async (req, res) => {
     );
 
     res.json({ received: received.rows, sent: sent.rows });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: '서버 오류' });
+  }
+});
+
+// ── 친구 별명 저장/수정 (나에게만 보임) ──
+app.put('/friends/:friendId/nickname', authMiddleware, async (req, res) => {
+  const { nickname } = req.body;
+  const friendId = req.params.friendId;
+  if (!nickname || !nickname.trim())
+    return res.status(400).json({ message: '별명 필요' });
+  try {
+    await pool.query(
+      `INSERT INTO friend_nicknames (user_id, friend_id, nickname)
+       VALUES ($1, $2, $3)
+       ON CONFLICT (user_id, friend_id) DO UPDATE SET nickname = $3`,
+      [req.user.id, friendId, nickname.trim()]
+    );
+    res.json({ message: '별명 저장 완료' });
+  } catch (err) {
+    console.error(err);
+    res.status(500).json({ message: '서버 오류' });
+  }
+});
+
+// ── 친구 별명 삭제 ──
+app.delete('/friends/:friendId/nickname', authMiddleware, async (req, res) => {
+  const friendId = req.params.friendId;
+  try {
+    await pool.query(
+      'DELETE FROM friend_nicknames WHERE user_id = $1 AND friend_id = $2',
+      [req.user.id, friendId]
+    );
+    res.json({ message: '별명 삭제 완료' });
   } catch (err) {
     console.error(err);
     res.status(500).json({ message: '서버 오류' });
@@ -363,8 +408,16 @@ app.delete('/schedules/:id', authMiddleware, async (req, res) => {
 
 async function initDb() {
   await pool.query(`
+    ALTER TABLE users ADD COLUMN IF NOT EXISTS name VARCHAR(100);
     ALTER TABLE schedules ADD COLUMN IF NOT EXISTS schedule_type VARCHAR(50);
     ALTER TABLE schedules ADD COLUMN IF NOT EXISTS custom_type VARCHAR(100);
+    CREATE TABLE IF NOT EXISTS friend_nicknames (
+      id SERIAL PRIMARY KEY,
+      user_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      friend_id UUID NOT NULL REFERENCES users(id) ON DELETE CASCADE,
+      nickname VARCHAR(100) NOT NULL,
+      UNIQUE(user_id, friend_id)
+    );
   `);
   console.log('DB columns ready');
 }

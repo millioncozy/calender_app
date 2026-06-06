@@ -47,9 +47,15 @@ function ProgressBar({ enlistmentDate, dischargeDate, username }) {
   );
 }
 
+// 표시 이름 우선순위: 내가 설정한 별명 > 상대 이름 > 아이디
+function displayName(f) {
+  return f.nickname || f.name || f.username;
+}
+
 function App() {
   const [mode, setMode] = useState('login');
   const [username, setUsername] = useState('');
+  const [registerName, setRegisterName] = useState('');
   const [password, setPassword] = useState('');
   const [user, setUser] = useState(null);
   const [token, setToken] = useState(localStorage.getItem('token') || '');
@@ -70,6 +76,9 @@ function App() {
   const [friends, setFriends] = useState([]);
   const [friendRequests, setFriendRequests] = useState({ received: [], sent: [] });
   const [friendTab, setFriendTab] = useState('list');
+  // 친구 별명 편집
+  const [editingNicknameId, setEditingNicknameId] = useState(null);
+  const [nicknameInput, setNicknameInput] = useState('');
 
   // 군 복무
   const [enlistmentDate, setEnlistmentDate] = useState('');
@@ -116,13 +125,32 @@ function App() {
   async function handleAuth() {
     try {
       const endpoint = mode === 'login' ? '/auth/login' : '/auth/register';
-      const res = await axios.post(`${API_BASE_URL}${endpoint}`, { username, password });
+      const payload = mode === 'register'
+        ? { username, password, name: registerName }
+        : { username, password };
+      const res = await axios.post(`${API_BASE_URL}${endpoint}`, payload);
       localStorage.setItem('token', res.data.token);
       localStorage.setItem('user', JSON.stringify(res.data.user));
       setToken(res.data.token);
       setUser(res.data.user);
     } catch (error) {
       showMessage(error.response?.data?.message || '요청 실패');
+    }
+  }
+
+  async function saveFriendNickname(friendId) {
+    try {
+      const val = nicknameInput.trim();
+      if (val) {
+        await axios.put(`${API_BASE_URL}/friends/${friendId}/nickname`, { nickname: val }, authHeaders);
+      } else {
+        await axios.delete(`${API_BASE_URL}/friends/${friendId}/nickname`, authHeaders);
+      }
+      setEditingNicknameId(null);
+      setNicknameInput('');
+      loadFriends();
+    } catch {
+      showMessage('별명 저장 실패');
     }
   }
 
@@ -313,8 +341,14 @@ function App() {
           </div>
           <div className="input-group">
             <label>아이디</label>
-            <input placeholder="아이디를 입력하세요" value={username} onChange={(e) => setUsername(e.target.value)} />
+            <input placeholder="로그인에 사용할 아이디" value={username} onChange={(e) => setUsername(e.target.value)} />
           </div>
+          {mode === 'register' && (
+            <div className="input-group">
+              <label>이름 <span className="label-hint">(친구에게 표시될 이름)</span></label>
+              <input placeholder="홍길동" value={registerName} onChange={(e) => setRegisterName(e.target.value)} />
+            </div>
+          )}
           <div className="input-group">
             <label>비밀번호</label>
             <input type="password" placeholder="비밀번호를 입력하세요" value={password}
@@ -520,23 +554,58 @@ function App() {
                   <p className="empty-text">아직 친구가 없어요</p>
                 ) : (
                   <ul className="user-list">
-                    {friends.map((friend) => (
-                      <li key={friend.id} className="user-item-col">
-                        <div className="user-item-row">
-                          <span className="user-item-name">
-                            <span className="avatar">{friend.username[0]}</span>
-                            {friend.username}
-                          </span>
-                          <button className="btn-view-cal" onClick={() => { setViewingFriend(friend); setFriendCalDate(new Date()); }}>
-                            📅 일정
-                          </button>
-                        </div>
-                        <ProgressBar
-                          enlistmentDate={friend.enlistment_date}
-                          dischargeDate={friend.discharge_date}
-                        />
-                      </li>
-                    ))}
+                    {friends.map((friend) => {
+                      const dName = displayName(friend);
+                      const isEditingNickname = editingNicknameId === friend.id;
+                      return (
+                        <li key={friend.id} className="user-item-col">
+                          <div className="user-item-row">
+                            <span className="user-item-name">
+                              <span className="avatar">{dName[0]}</span>
+                              <span>
+                                <span className="friend-display-name">{dName}</span>
+                                {friend.nickname && (
+                                  <span className="friend-real-name">({friend.name || friend.username})</span>
+                                )}
+                                <span className="friend-uid">@{friend.username}</span>
+                              </span>
+                            </span>
+                            <div className="friend-actions">
+                              <button
+                                className="btn-nickname-edit"
+                                title="별명 설정"
+                                onClick={() => {
+                                  setEditingNicknameId(friend.id);
+                                  setNicknameInput(friend.nickname || '');
+                                }}
+                              >✏️</button>
+                              <button className="btn-view-cal" onClick={() => { setViewingFriend(friend); setFriendCalDate(new Date()); }}>
+                                📅
+                              </button>
+                            </div>
+                          </div>
+                          {/* 별명 편집 인라인 UI */}
+                          {isEditingNickname && (
+                            <div className="nickname-edit-row">
+                              <input
+                                className="nickname-input"
+                                placeholder="별명 입력 (비우면 삭제)"
+                                value={nicknameInput}
+                                onChange={(e) => setNicknameInput(e.target.value)}
+                                onKeyDown={(e) => e.key === 'Enter' && saveFriendNickname(friend.id)}
+                                autoFocus
+                              />
+                              <button className="btn-nickname-save" onClick={() => saveFriendNickname(friend.id)}>저장</button>
+                              <button className="btn-nickname-cancel" onClick={() => setEditingNicknameId(null)}>취소</button>
+                            </div>
+                          )}
+                          <ProgressBar
+                            enlistmentDate={friend.enlistment_date}
+                            dischargeDate={friend.discharge_date}
+                          />
+                        </li>
+                      );
+                    })}
                   </ul>
                 )}
               </div>
@@ -553,8 +622,11 @@ function App() {
                       {friendRequests.received.map((req) => (
                         <li key={req.id} className="user-item">
                           <span className="user-item-name">
-                            <span className="avatar">{req.fromUsername?.[0]}</span>
-                            {req.fromUsername}
+                            <span className="avatar">{(req.fromName || req.fromUsername)?.[0]}</span>
+                            <span>
+                              <span className="friend-display-name">{req.fromName || req.fromUsername}</span>
+                              <span className="friend-uid">@{req.fromUsername}</span>
+                            </span>
                           </span>
                           <div className="request-actions">
                             <button className="btn-accept" onClick={() => acceptRequest(req.id)}>수락</button>
@@ -575,8 +647,11 @@ function App() {
                       {friendRequests.sent.map((req) => (
                         <li key={req.id} className="user-item">
                           <span className="user-item-name">
-                            <span className="avatar">{req.toUsername?.[0]}</span>
-                            {req.toUsername}
+                            <span className="avatar">{(req.toName || req.toUsername)?.[0]}</span>
+                            <span>
+                              <span className="friend-display-name">{req.toName || req.toUsername}</span>
+                              <span className="friend-uid">@{req.toUsername}</span>
+                            </span>
                           </span>
                           <button className="btn-reject" onClick={() => cancelRequest(req.id)}>취소</button>
                         </li>
@@ -604,8 +679,11 @@ function App() {
                     {searchResults.map((item) => (
                       <li key={item.id} className="user-item">
                         <span className="user-item-name">
-                          <span className="avatar">{item.username[0]}</span>
-                          {item.username}
+                          <span className="avatar">{(item.name || item.username)[0]}</span>
+                          <span>
+                            <span className="friend-display-name">{item.name || item.username}</span>
+                            <span className="friend-uid">@{item.username}</span>
+                          </span>
                         </span>
                         <button className="btn-friend-add" onClick={() => sendFriendRequest(item.id)}>
                           요청
@@ -623,8 +701,9 @@ function App() {
         {activeTab === 'profile' && (
           <>
             <div className="card profile-card">
-              <div className="profile-avatar">{user.username[0]}</div>
-              <div className="profile-name">{user.username}</div>
+              <div className="profile-avatar">{(user.name || user.username)[0]}</div>
+              <div className="profile-name">{user.name || user.username}</div>
+              <div className="profile-username">@{user.username}</div>
               <div className="profile-stats">
                 <div className="stat">
                   <div className="stat-num">{friends.length}</div>
@@ -681,7 +760,7 @@ function App() {
           <div className="friend-cal-overlay">
             <div className="friend-cal-header">
               <button className="btn-back" onClick={() => setViewingFriend(null)}>← 뒤로</button>
-              <span className="friend-cal-title">{viewingFriend.username}의 캘린더</span>
+              <span className="friend-cal-title">{displayName(viewingFriend)}의 캘린더</span>
             </div>
             <div className="friend-cal-body">
               <div className="calendar-wrapper">
